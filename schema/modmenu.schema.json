@@ -1,0 +1,130 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://raw.githubusercontent.com/AFAlimru/ModMenuBE/main/schema/modmenu.schema.json",
+    "title": "ModMenuBE adapter (modmenu.json)",
+    "description": "How ModMenuBE shows a Minecraft Bedrock mod: metadata and an editor for its JSON config files.",
+    "type": "object",
+    "definitions": {
+        "text": {
+            "description": "A string, or an object of language code -> string (zh_TW, en_US, ...).",
+            "oneOf": [
+                { "type": "string" },
+                { "type": "object", "additionalProperties": { "type": "string" } }
+            ]
+        },
+        "option": {
+            "oneOf": [
+                { "type": "string", "description": "Key only; the label is derived from it." },
+                {
+                    "type": "object",
+                    "required": ["key"],
+                    "properties": {
+                        "key": { "type": "string", "description": "Dotted path (\"hud.enabled\") or JSON pointer (\"/hud/enabled\"). An object key shows every value under it." },
+                        "label": { "$ref": "#/definitions/text" },
+                        "description": { "$ref": "#/definitions/text" },
+                        "min": { "type": "number" },
+                        "max": { "type": "number" },
+                        "step": { "type": "number" },
+                        "format": { "type": "string", "description": "printf format of the slider, e.g. \"%d%%\" or \"%.2f\"." },
+                        "readOnly": { "type": "boolean" },
+                        "choices": {
+                            "type": "array",
+                            "description": "Shows a dropdown. Plain values, or {value, label}.",
+                            "items": {
+                                "oneOf": [
+                                    { "type": ["string", "number", "boolean"] },
+                                    {
+                                        "type": "object",
+                                        "required": ["value"],
+                                        "properties": { "value": {}, "label": { "$ref": "#/definitions/text" } }
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            ]
+        },
+        "file": {
+            "type": "object",
+            "required": ["path"],
+            "properties": {
+                "path": { "type": "string", "description": "JSON file relative to the mod folder, e.g. config/config.json." },
+                "title": { "$ref": "#/definitions/text" },
+                "restartRequired": { "type": "boolean", "default": true },
+                "listedOnly": { "type": "boolean", "default": false, "description": "Only show the options named in sections." },
+                "hidden": { "type": "array", "items": { "type": "string" }, "description": "Keys never shown. A key hides everything under it." },
+                "sections": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "title": { "$ref": "#/definitions/text" },
+                            "description": { "$ref": "#/definitions/text" },
+                            "options": { "type": "array", "items": { "$ref": "#/definitions/option" } }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "properties": {
+        "description": { "type": "string" },
+        "authors": { "type": "array", "items": { "type": "string" } },
+        "contributors": { "type": "array", "items": { "type": "string" } },
+        "license": { "type": "string" },
+        "icon": { "type": "string", "description": "PNG inside the mod folder." },
+        "links": { "type": "object", "additionalProperties": { "type": "string", "format": "uri" } },
+        "badges": { "type": "array", "items": { "enum": ["library", "deprecated", "client", "modpack"] } },
+        "parent": { "type": "string" },
+        "lip": { "type": "string", "description": "lip identifier, e.g. github.com/owner/repo." },
+        "update": {
+            "description": "Where to look for new versions; false turns the check off.",
+            "oneOf": [
+                { "type": "boolean", "const": false },
+                { "type": "string", "format": "uri" },
+                {
+                    "type": "object",
+                    "properties": {
+                        "github": { "type": "string" },
+                        "lip": { "type": "string" },
+                        "curseforge": { "type": ["integer", "string"] },
+                        "url": { "type": "string", "format": "uri" },
+                        "sameMinor": { "type": "boolean" }
+                    }
+                }
+            ]
+        },
+        "open": {
+            "type": "object",
+            "description": "Open the mod's own menu by pressing its hotkey for the player.",
+            "required": ["hotkey"],
+            "properties": {
+                "hotkey": {
+                    "description": "A fixed chord (\"Alt+M\"), or where the player's binding is stored.",
+                    "oneOf": [
+                        { "type": "string" },
+                        {
+                            "type": "object",
+                            "properties": {
+                                "file": { "type": "string", "description": "JSON file relative to the mod folder." },
+                                "key": { "type": "string", "description": "Dotted path of the binding; null means unbound." },
+                                "default": { "type": "string", "description": "Used when the key is missing." }
+                            }
+                        }
+                    ]
+                },
+                "label": { "$ref": "#/definitions/text" },
+                "delayMs": { "type": "integer", "minimum": 0, "maximum": 2000, "default": 150 }
+            }
+        },
+        "config": {
+            "description": "false hides the config button. Otherwise the files to edit.",
+            "oneOf": [
+                { "type": "boolean", "const": false },
+                { "type": "object", "properties": { "files": { "type": "array", "items": { "$ref": "#/definitions/file" } } } },
+                { "type": "array", "items": { "$ref": "#/definitions/file" } }
+            ]
+        }
+    }
+}

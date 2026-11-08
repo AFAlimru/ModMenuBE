@@ -1,0 +1,46 @@
+{
+    "$schema": "https://raw.githubusercontent.com/AFAlimru/ModMenuBE/main/schema/modmenu.schema.json",
+    "config": {
+        "files": [
+            {
+                "path": "config/settings.json",
+                "title": { "en_US": "Lamium", "zh_TW": "Lamium" },
+                "listedOnly": true,
+                "hidden": ["version", "bindings", "information.lineOrder"],
+                "sections": [
+                    {
+                        "title": { "en_US": "Interaction", "zh_TW": "互動" },
+                        "options": [
+                            {
+                                "key": "interaction.attackMode",
+                                "label": { "en_US": "Auto attack mode", "zh_TW": "自動攻擊模式" },
+                                "choices": [
+                                    { "value": "periodic", "label": { "en_US": "Periodic", "zh_TW": "定期" } },
+                                    { "value": "fast", "label": { "en_US": "Fast", "zh_TW": "快速" } }
+                                ]
+                            },
+                            {
+                                "key": "interaction.useMode",
+                                "label": { "en_US": "Auto use mode", "zh_TW": "自動使用模式" },
+                                "choices": [
+                                    { "value": "periodic", "label": { "en_US": "Periodic", "zh_TW": "定期" } },
+                                    { "value": "fast", "label": { "en_US": "Fast", "zh_TW": "快速" } }
+                                ]
+                            },
+                            { "key": "interaction.attackTicks", "label": { "en_US": "Attack interval (ticks)", "zh_TW": "攻擊間隔（tick）" }, "min": 1, "max": 40, "step": 1, "format": "%.0f" },
+                            { "key": "interaction.useTicks", "label": { "en_US": "Use interval (ticks)", "zh_TW": "使用間隔（tick）" }, "min": 1, "max": 40, "step": 1, "format": "%.0f" },
+                            { "key": "interaction.toolGuard", "label": { "en_US": "Tool guard", "zh_TW": "工具保護" }, "description": { "en_US": "Stop before a tool breaks.", "zh_TW": "工具快壞時停止使用。" } },
+                            { "key": "interaction.elytraSwap", "label": { "en_US": "Elytra swap", "zh_TW": "鞘翅自動切換" } },
+                            { "key": "interaction.edgeGuard", "label": { "en_US": "Edge guard", "zh_TW": "邊緣防護" } },
+                            "interaction"
+                        ]
+                    },
+                    { "title": { "en_US": "Information HUD", "zh_TW": "資訊 HUD" }, "options": ["information"] },
+                    { "title": { "en_US": "Visuals", "zh_TW": "視覺" }, "options": ["visuals"] },
+                    { "title": { "en_US": "Overlays", "zh_TW": "疊加顯示" }, "options": ["overlays"] },
+                    { "title": { "en_US": "Camera", "zh_TW": "鏡頭" }, "options": ["camera"] }
+                ]
+            }
+        ]
+    }
+}

@@ -1,0 +1,136 @@
+{
+    "$schema": "https://raw.githubusercontent.com/AFAlimru/ModMenuBE/main/schema/modmenu.schema.json",
+    "open": {
+        "hotkey": { "file": "config/config.json", "key": "input.hotkeys.openMenu", "default": "Alt+M" },
+        "label": { "en_US": "Open LHolo menu", "zh_TW": "開啟 LHolo 選單" }
+    },
+    "config": {
+        "files": [
+            {
+                "path": "config/config.json",
+                "title": { "en_US": "Settings", "zh_TW": "設定" },
+                "hidden": ["version", "placement.consentGiven", "hud.projection.position.custom", "hud.materials.position.custom", "input.hotkeys"],
+                "sections": [
+                    {
+                        "title": { "en_US": "Interface", "zh_TW": "介面" },
+                        "options": [
+                            {
+                                "key": "interface.language",
+                                "label": { "en_US": "Language", "zh_TW": "語言" },
+                                "choices": [
+                                    { "value": "zh_TW", "label": "繁體中文" },
+                                    { "value": "zh_CN", "label": "简体中文" },
+                                    { "value": "en_US", "label": "English" },
+                                    { "value": "ja_JP", "label": "日本語" },
+                                    { "value": "ru_RU", "label": "Русский" }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "title": { "en_US": "Rendering", "zh_TW": "渲染" },
+                        "options": [
+                            { "key": "rendering.structureBounds", "label": { "en_US": "Show structure bounds", "zh_TW": "顯示結構邊界" } },
+                            {
+                                "key": "rendering.correction.fillOpacityPercent",
+                                "label": { "en_US": "Wrong block fill opacity", "zh_TW": "錯誤方塊填色不透明度" },
+                                "min": 0, "max": 100, "format": "%d%%"
+                            },
+                            {
+                                "key": "rendering.correction.outlineOpacityPercent",
+                                "label": { "en_US": "Wrong block outline opacity", "zh_TW": "錯誤方塊外框不透明度" },
+                                "min": 0, "max": 100, "format": "%d%%"
+                            },
+                            {
+                                "key": "rendering.correction.seeThrough",
+                                "label": { "en_US": "Wrong blocks visible through walls", "zh_TW": "錯誤方塊透視顯示" }
+                            },
+                            {
+                                "key": "rendering.missingSeeThrough",
+                                "label": { "en_US": "Missing blocks visible through walls", "zh_TW": "缺少方塊透視顯示" }
+                            }
+                        ]
+                    },
+                    {
+                        "title": { "en_US": "Projection HUD", "zh_TW": "投影 HUD" },
+                        "options": [
+                            { "key": "hud.projection.enabled", "label": { "en_US": "Show projection HUD", "zh_TW": "顯示投影 HUD" } },
+                            { "key": "hud.projection.show.fileName", "label": { "en_US": "File name", "zh_TW": "檔案名稱" } },
+                            { "key": "hud.projection.show.layer", "label": { "en_US": "Layer", "zh_TW": "層數" } },
+                            { "key": "hud.projection.show.overallProgress", "label": { "en_US": "Overall progress", "zh_TW": "整體進度" } },
+                            { "key": "hud.projection.show.progress", "label": { "en_US": "Layer progress", "zh_TW": "本層進度" } },
+                            { "key": "hud.projection.show.wrongState", "label": { "en_US": "Wrong states", "zh_TW": "方塊狀態錯誤" } },
+                            { "key": "hud.projection.show.wrongType", "label": { "en_US": "Wrong blocks", "zh_TW": "方塊種類錯誤" } },
+                            { "key": "hud.projection.show.extraBlocks", "label": { "en_US": "Extra blocks", "zh_TW": "多餘方塊" } },
+                            { "key": "hud.projection.show.projectedBlockName", "label": { "en_US": "Name of the projected block", "zh_TW": "投影方塊名稱" } },
+                            {
+                                "key": "hud.projection.position.anchor",
+                                "label": { "en_US": "Position", "zh_TW": "位置" },
+                                "choices": [
+                                    { "value": "topLeft", "label": { "en_US": "Top left", "zh_TW": "左上" } },
+                                    { "value": "topCenter", "label": { "en_US": "Top center", "zh_TW": "中上" } },
+                                    { "value": "topRight", "label": { "en_US": "Top right", "zh_TW": "右上" } },
+                                    { "value": "center", "label": { "en_US": "Center", "zh_TW": "中央" } },
+                                    { "value": "bottomLeft", "label": { "en_US": "Bottom left", "zh_TW": "左下" } },
+                                    { "value": "bottomRight", "label": { "en_US": "Bottom right", "zh_TW": "右下" } },
+                                    { "value": "custom", "label": { "en_US": "Custom (set in LHolo)", "zh_TW": "自訂（在 LHolo 內調整）" } }
+                                ]
+                            },
+                            { "key": "hud.projection.scalePercent", "label": { "en_US": "Scale", "zh_TW": "縮放" }, "min": 50, "max": 200, "step": 5, "format": "%d%%" },
+                            { "key": "hud.projection.backgroundOpacityPercent", "label": { "en_US": "Background opacity", "zh_TW": "背景不透明度" }, "min": 0, "max": 100, "format": "%d%%" }
+                        ]
+                    },
+                    {
+                        "title": { "en_US": "Material list HUD", "zh_TW": "材料清單 HUD" },
+                        "options": [
+                            { "key": "hud.materials.enabled", "label": { "en_US": "Show material list", "zh_TW": "顯示材料清單" } },
+                            { "key": "hud.materials.convertToStacks", "label": { "en_US": "Count in stacks", "zh_TW": "以組數顯示" } },
+                            { "key": "hud.materials.itemsPerPage", "label": { "en_US": "Items per page", "zh_TW": "每頁項目數" }, "min": 1, "max": 20 },
+                            {
+                                "key": "hud.materials.position.anchor",
+                                "label": { "en_US": "Position", "zh_TW": "位置" },
+                                "choices": [
+                                    { "value": "topLeft", "label": { "en_US": "Top left", "zh_TW": "左上" } },
+                                    { "value": "topCenter", "label": { "en_US": "Top center", "zh_TW": "中上" } },
+                                    { "value": "topRight", "label": { "en_US": "Top right", "zh_TW": "右上" } },
+                                    { "value": "center", "label": { "en_US": "Center", "zh_TW": "中央" } },
+                                    { "value": "bottomLeft", "label": { "en_US": "Bottom left", "zh_TW": "左下" } },
+                                    { "value": "bottomRight", "label": { "en_US": "Bottom right", "zh_TW": "右下" } },
+                                    { "value": "custom", "label": { "en_US": "Custom (set in LHolo)", "zh_TW": "自訂（在 LHolo 內調整）" } }
+                                ]
+                            },
+                            { "key": "hud.materials.scalePercent", "label": { "en_US": "Scale", "zh_TW": "縮放" }, "min": 50, "max": 200, "step": 5, "format": "%d%%" },
+                            { "key": "hud.materials.backgroundOpacityPercent", "label": { "en_US": "Background opacity", "zh_TW": "背景不透明度" }, "min": 0, "max": 100, "format": "%d%%" }
+                        ]
+                    },
+                    {
+                        "title": { "en_US": "Save-structure HUD", "zh_TW": "儲存結構 HUD" },
+                        "options": [
+                            { "key": "hud.write.enabled", "label": { "en_US": "Show", "zh_TW": "顯示" } },
+                            {
+                                "key": "hud.write.position.anchor",
+                                "label": { "en_US": "Position", "zh_TW": "位置" },
+                                "choices": [
+                                    { "value": "topLeft", "label": { "en_US": "Top left", "zh_TW": "左上" } },
+                                    { "value": "topCenter", "label": { "en_US": "Top center", "zh_TW": "中上" } },
+                                    { "value": "topRight", "label": { "en_US": "Top right", "zh_TW": "右上" } }
+                                ]
+                            },
+                            { "key": "hud.write.scalePercent", "label": { "en_US": "Scale", "zh_TW": "縮放" }, "min": 50, "max": 200, "step": 5, "format": "%d%%" },
+                            { "key": "hud.write.backgroundOpacityPercent", "label": { "en_US": "Background opacity", "zh_TW": "背景不透明度" }, "min": 0, "max": 100, "format": "%d%%" }
+                        ]
+                    },
+                    {
+                        "title": { "en_US": "Input and placement", "zh_TW": "輸入與放置" },
+                        "description": { "en_US": "Hotkeys are changed in LHolo's own menu.", "zh_TW": "快捷鍵請在 LHolo 自己的選單裡修改。" },
+                        "options": [
+                            { "key": "input.altWheelOffset", "label": { "en_US": "Alt + wheel moves the projection", "zh_TW": "Alt＋滾輪移動投影" } },
+                            { "key": "placement.radius", "label": { "en_US": "Auto-placement radius", "zh_TW": "自動放置半徑" }, "min": 1, "max": 4 },
+                            { "key": "placement.breakCooldownSeconds", "label": { "en_US": "Break cooldown", "zh_TW": "破壞冷卻時間" }, "description": { "en_US": "Seconds", "zh_TW": "秒" }, "min": 0, "max": 60 }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}

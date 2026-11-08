@@ -1,0 +1,70 @@
+{
+    "$schema": "https://raw.githubusercontent.com/AFAlimru/ModMenuBE/main/schema/modmenu.schema.json",
+    "config": {
+        "files": [
+            {
+                "path": "config/config.json",
+                "title": { "en_US": "LeviLamina", "zh_TW": "LeviLamina" },
+                "hidden": ["version"],
+                "sections": [
+                    {
+                        "title": { "en_US": "General", "zh_TW": "一般" },
+                        "options": [
+                            {
+                                "key": "language",
+                                "label": { "en_US": "Language", "zh_TW": "語言" },
+                                "choices": [
+                                    { "value": "system", "label": { "en_US": "Follow system", "zh_TW": "跟隨系統" } },
+                                    { "value": "zh_TW", "label": "繁體中文" },
+                                    { "value": "zh_CN", "label": "简体中文" },
+                                    { "value": "en_US", "label": "English" },
+                                    { "value": "ja_JP", "label": "日本語" },
+                                    { "value": "ru_RU", "label": "Русский" }
+                                ]
+                            },
+                            { "key": "targeted.showOutputWindow", "label": { "en_US": "Show the console window", "zh_TW": "顯示主控台視窗" } },
+                            { "key": "targeted.forceEnableCheatCommands", "label": { "en_US": "Always allow cheat commands", "zh_TW": "強制允許作弊指令" } },
+                            { "key": "modules.disableAutoCompactionLog", "label": { "en_US": "Hide auto-compaction log lines", "zh_TW": "隱藏自動壓縮的紀錄" } }
+                        ]
+                    },
+                    {
+                        "title": { "en_US": "Crash logger", "zh_TW": "崩潰紀錄" },
+                        "options": [
+                            { "key": "modules.crashLogger.enabled", "label": { "en_US": "Enable CrashLogger", "zh_TW": "啟用 CrashLogger" } },
+                            { "key": "modules.crashLogger.builtin", "label": { "en_US": "Use the built-in handler", "zh_TW": "使用內建處理器" } },
+                            { "key": "modules.crashLogger.uploadToSentry", "label": { "en_US": "Upload crash reports to Sentry", "zh_TW": "上傳崩潰報告到 Sentry" } }
+                        ]
+                    },
+                    {
+                        "title": { "en_US": "Commands", "zh_TW": "指令" },
+                        "options": [
+                            { "key": "modules.command.tpdimCommand.enabled", "label": { "en_US": "/tpdim", "zh_TW": "/tpdim" } },
+                            { "key": "modules.command.versionCommand.enabled", "label": { "en_US": "/version", "zh_TW": "/version" } },
+                            { "key": "modules.command.modManageCommand.enabled", "label": { "en_US": "/ll (mod management)", "zh_TW": "/ll（模組管理）" } },
+                            { "key": "modules.command.crashCommand.enabled", "label": { "en_US": "/crash", "zh_TW": "/crash" } }
+                        ]
+                    },
+                    {
+                        "title": { "en_US": "Log files", "zh_TW": "紀錄檔" },
+                        "options": [
+                            { "key": "logRotate.rotateOnOpen", "label": { "en_US": "Start a new log on launch", "zh_TW": "啟動時建立新紀錄檔" } },
+                            {
+                                "key": "logRotate.interval",
+                                "label": { "en_US": "Rotate", "zh_TW": "輪替週期" },
+                                "choices": [
+                                    { "value": "Hourly", "label": { "en_US": "Hourly", "zh_TW": "每小時" } },
+                                    { "value": "Daily", "label": { "en_US": "Daily", "zh_TW": "每天" } },
+                                    { "value": "Weekly", "label": { "en_US": "Weekly", "zh_TW": "每週" } }
+                                ]
+                            },
+                            { "key": "logRotate.compress", "label": { "en_US": "Compress old logs", "zh_TW": "壓縮舊紀錄" } },
+                            { "key": "logRotate.keepUncompressed", "label": { "en_US": "Uncompressed logs to keep", "zh_TW": "保留未壓縮的紀錄數" }, "min": 0, "max": 30 },
+                            { "key": "logRotate.cleanup", "label": { "en_US": "Delete old logs", "zh_TW": "自動刪除舊紀錄" } },
+                            { "key": "logRotate.maxAgeDays", "label": { "en_US": "Keep logs for (days)", "zh_TW": "紀錄保留天數" }, "min": 1, "max": 365 }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}

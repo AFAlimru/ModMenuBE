@@ -1,0 +1,45 @@
+add_rules("mode.debug", "mode.release")
+
+set_project("ModMenuBE")
+set_version("0.1.0")
+
+add_requires("imgui v1.91.9", {configs = {shared = false, win32 = true, dx11 = true, freetype = false}})
+add_requires("minhook", {configs = {shared = false}})
+add_requires("nlohmann_json")
+
+set_runtimes("MT")
+
+target("ModMenuBE")
+    set_kind("shared")
+    set_languages("c++20")
+    set_encodings("utf-8")
+    add_defines("NOMINMAX", "UNICODE", "_UNICODE", "WIN32_LEAN_AND_MEAN", "MODMENU_BUILDING")
+    add_includedirs("include", "src")
+    add_files("src/**.cpp")
+    add_headerfiles("include/(modmenu/*.h)", "include/(modmenu/*.hpp)")
+    add_packages("imgui", "minhook", "nlohmann_json")
+    add_syslinks("user32", "gdi32", "shell32", "ole32", "windowscodecs", "winhttp",
+                 "d3d11", "d3d12", "dxgi", "imm32", "dwmapi")
+    set_symbols("debug")
+    set_optimize("faster")
+
+    after_build(function (target)
+        local out = path.join("bin", "ModMenuBE")
+        os.mkdir(out)
+        os.cp(target:targetfile(), out)
+        os.cp("manifest.json", out)
+        os.cp("LICENSE", out)
+        os.rm(path.join(out, "adapters"))
+        os.cp("adapters", out)
+    end)
+
+-- Development only: a D3D12 window that loads the mod (xmake build TestHost).
+target("TestHost")
+    set_default(false)
+    set_kind("binary")
+    set_languages("c++20")
+    set_encodings("utf-8")
+    add_defines("NOMINMAX", "UNICODE", "_UNICODE")
+    add_files("tests/TestHost.cpp")
+    add_syslinks("user32", "d3d12", "dxgi")
+    add_ldflags("/SUBSYSTEM:CONSOLE", {force = true})
