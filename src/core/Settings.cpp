@@ -54,6 +54,7 @@ void Settings::load() {
     pauseInputWhileOpen = j.value("blockGameInputWhileOpen", pauseInputWhileOpen.load());
     fullscreen         = j.value("fullscreen", fullscreen.load());
     uiScale            = std::clamp(j.value("uiScale", uiScale.load()), 0.5, 3.0);
+    buttonLayoutVersion = j.value("buttonLayoutVersion", buttonLayoutVersion.load());
     setLanguage(j.value("language", std::string("auto")));
     setCurseforgeApiKey(j.value("curseforgeApiKey", std::string()));
 }
@@ -69,6 +70,9 @@ void Settings::save() const {
     j["fullscreen"]              = fullscreen.load();
     j["uiScale"]                 = uiScale.load();
     j["curseforgeApiKey"]        = curseforgeApiKey();
+#ifndef _WIN32
+    j["buttonLayoutVersion"]     = buttonLayoutVersion.load();
+#endif
     if (!writeFileAtomic(settingsPath(), j.dump(4))) log::warn("could not write config.json");
 }
 

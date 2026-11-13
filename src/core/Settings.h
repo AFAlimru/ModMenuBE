@@ -17,6 +17,7 @@ struct Settings {
     std::atomic<bool>   pauseInputWhileOpen{true};
     std::atomic<bool>   fullscreen{false}; // menu fills the whole window instead of a centred panel
     std::atomic<double> uiScale{1.0};
+    std::atomic<int>    buttonLayoutVersion{0}; // Android: last default MOD button layout applied
 
     std::string language() const;          // "auto", "zh_TW", "en_US"
     void        setLanguage(std::string v);

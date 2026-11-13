@@ -11,6 +11,8 @@
 
 #include <algorithm>
 #include <cstring>
+#include <string>
+#include <tuple>
 
 namespace modmenu::ui {
 
@@ -104,6 +106,19 @@ void registerSelfConfig() {
         o.setFloat = [](void*, double v) { settings().uiScale = v; };
         reg.addOption("ModMenuBE", std::move(o));
     }
+#ifndef _WIN32
+    for (auto [id, key, fn] : {std::tuple{"buttonLayout", "settings.button_layout", &openButtonLayout},
+                               std::tuple{"buttonReset", "settings.button_reset", &resetButtonLayout}}) {
+        ConfigOption o;
+        o.kind    = OptionKind::Button;
+        o.id      = id;
+        o.label   = tr(key);
+        o.tooltip = tr((std::string(key) + ".tip").c_str());
+        o.user    = reinterpret_cast<void*>(fn);
+        o.onClick = [](void* u) { reinterpret_cast<void (*)()>(u)(); };
+        reg.addOption("ModMenuBE", std::move(o));
+    }
+#endif
     addBool("checkUpdatesOnOpen", "settings.check_updates", &settings().checkUpdatesOnOpen);
     addBool("fullscreen", "settings.fullscreen", &settings().fullscreen);
     addBool("blockGameInput", "settings.block_input", &settings().pauseInputWhileOpen);

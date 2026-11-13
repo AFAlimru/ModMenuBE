@@ -147,6 +147,7 @@ add_custom_target(levi_package
     COMMAND "${CMAKE_COMMAND}" -E copy "$<TARGET_FILE:${MOD_LIBRARY_NAME}>" "${PKG_DIR}/lib${MOD_LIBRARY_NAME}.so"
     COMMAND "${CMAKE_COMMAND}" -E copy "${CMAKE_CURRENT_BINARY_DIR}/manifest.json" "${PKG_DIR}/manifest.json"
     COMMAND "${CMAKE_COMMAND}" -E copy "${CMAKE_CURRENT_SOURCE_DIR}/../LICENSE" "${PKG_DIR}/LICENSE"
+    COMMAND "${CMAKE_COMMAND}" -E copy "${CMAKE_CURRENT_SOURCE_DIR}/../assets/icon.png" "${PKG_DIR}/icon.png"
     COMMAND "${CMAKE_COMMAND}" -E chdir "${PKG_ROOT}" "${CMAKE_COMMAND}" -E tar "cf" "${PKG_FILE}" --format=zip "${MOD_ID}"
     DEPENDS ${MOD_LIBRARY_NAME}
     COMMENT "Packaging ${MOD_ID}.levipack"

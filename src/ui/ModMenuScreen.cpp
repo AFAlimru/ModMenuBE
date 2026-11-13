@@ -70,6 +70,7 @@ struct State {
     std::string toast;
     double      toastUntil = 0;
     bool        confirmDisableLL = false;
+    std::string restartNotice; // shown once in a dialog after a mod is enabled or disabled
     bool        checkedUpdatesThisSession = false;
     float       appliedScale = 0;
     std::set<std::string> faultedScreens; // config screens whose callbacks crashed
@@ -475,9 +476,13 @@ void openConfigFor(ModInfo const& mod) {
 
 void toggleEnabled(ModInfo const& mod) {
     std::string error;
-    if (!ModRegistry::instance().setEnabled(mod.name, !mod.enabled, error)) {
+    bool enable = !mod.enabled;
+    if (!ModRegistry::instance().setEnabled(mod.name, enable, error)) {
         showToast(mod.self ? tr("self_disable") : error);
+        return;
     }
+    // Mods are only loaded or unloaded at startup: say so where it cannot be missed.
+    gState.restartNotice = fmt(tr(enable ? "restart_notice.enabled" : "restart_notice.disabled"), mod.name.c_str());
 }
 
 void drawDetails(ModInfo const& mod) {
@@ -1271,10 +1276,23 @@ void drawConfirm() {
         ImGui::OpenPopup("##confirm");
         gState.confirmDisableLL = false;
     }
+    if (!gState.restartNotice.empty() && !ImGui::IsPopupOpen("##restart")) ImGui::OpenPopup("##restart");
     ImVec2 center = ImGui::GetMainViewport()->GetCenter();
     ImGui::SetNextWindowPos(center, ImGuiCond_Always, {0.5f, 0.5f});
     ImGui::SetNextWindowSize({s(460), 0});
     ImGui::PushStyleColor(ImGuiCol_PopupBg, ImGui::ColorConvertU32ToFloat4(col::PanelLight));
+    if (ImGui::BeginPopupModal("##restart", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize)) {
+        fonts::note(gState.restartNotice);
+        ore::textWrapped(gState.restartNotice.c_str());
+        ImGui::Dummy({0, s(8)});
+        if (ore::button("##ok", tr("got_it"), ore::Variant::Primary) || ImGui::IsKeyPressed(ImGuiKey_Escape)) {
+            gState.restartNotice.clear();
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndPopup();
+    }
+    ImGui::SetNextWindowPos(center, ImGuiCond_Always, {0.5f, 0.5f});
+    ImGui::SetNextWindowSize({s(460), 0});
     if (ImGui::BeginPopupModal("##confirm", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize)) {
         ore::textWrapped(tr("confirm_disable_ll"));
         ImGui::Dummy({0, s(8)});

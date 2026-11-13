@@ -6,6 +6,7 @@ version = "0.1.1"
 name = "ModMenuBE"
 description = "A mod menu for Minecraft Bedrock in the OreUI style: press F8 in game to browse, search, enable, disable and configure your mods."
 tags = ["utility"]
+logo = "https://raw.githubusercontent.com/AFAlimru/ModMenuBE/main/assets/icon.png"
 
 # ModMenuBE is a preload-native mod and also runs without LeviLamina (the camera is then not locked
 # while the menu is open). The dependency is declared so that launchers install it alongside

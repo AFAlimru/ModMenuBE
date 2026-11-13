@@ -6,4 +6,8 @@ namespace modmenu::android::entry {
 void install();
 void uninstall();
 
+// ModMenuBE settings: open LeviLauncher's menu (HUD editor) / put the MOD button back at its default place.
+void openButtonLayout();
+void resetButtonLayout();
+
 } // namespace modmenu::android::entry
