@@ -1,5 +1,7 @@
 #include "ModMenuMod.h"
 
+#include "LauncherHud.h"
+
 #include "EglOverlay.h"
 #include "Entry.h"
 #include "State.h"
@@ -34,6 +36,7 @@ void openMenu() {
     if (!state().active.load()) return;
     state().openedAtMs.store(nowMs());
     state().menuOpen.store(true);
+    launcher::setHudHidden(true);
     ui::requestOpen();
 }
 
@@ -42,6 +45,7 @@ void closeMenu() {
     ui::requestClose("android");
     pl::input::hideKeyboard();
     input::onMenuClosed();
+    launcher::setHudHidden(false);
 }
 
 void toggleMenu() {
@@ -53,6 +57,7 @@ void menuClosedByUi() {
     if (!state().menuOpen.exchange(false)) return;
     pl::input::hideKeyboard();
     input::onMenuClosed();
+    launcher::setHudHidden(false);
 }
 
 ModMenuMod& ModMenuMod::instance() {
