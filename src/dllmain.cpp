@@ -4,6 +4,7 @@
 #include "core/Paths.h"
 #include "core/Settings.h"
 #include "core/Util.h"
+#include "overlay/CommandHook.h"
 #include "overlay/GameInputGuard.h"
 #include "overlay/Overlay.h"
 #include "ui/SelfConfig.h"
@@ -37,6 +38,7 @@ DWORD WINAPI initThread(LPVOID) {
     ui::registerSelfConfig();
     ModRegistry::instance().rescan();
     overlay::installGameInputGuard();
+    overlay::watchLeviLaminaCommands();
     log::info("ModMenuBE loaded from {} ({} mods found)", pathUtf8(paths::selfDir()),
               ModRegistry::instance().mods()->size());
 

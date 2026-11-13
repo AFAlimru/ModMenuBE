@@ -42,7 +42,7 @@ inline ModMenuApi const* api() {
         HMODULE module = GetModuleHandleW(L"ModMenuBE.dll");
         if (!module) return nullptr;
         auto get = reinterpret_cast<ModMenu_GetApiFn>(GetProcAddress(module, "ModMenu_GetApi"));
-        return get ? get(MODMENU_API_VERSION) : nullptr;
+        return get ? get(1) : nullptr; // newer entries check api()->version themselves
     }();
     return cached;
 }
@@ -217,6 +217,16 @@ inline bool setExternalScreen(std::string_view mod, std::function<void()> open) 
                std::string(mod).c_str(),
                [](void* u) { static_cast<detail::Box<std::function<void()>>*>(u)->value(); }, b
            ) != 0;
+}
+
+// A command button on the mod's details page (needs ModMenuBE with API version 2).
+inline bool addCommand(std::string_view mod, std::string_view command, std::string_view label = {},
+                       std::string_view description = {}) {
+    ModMenuApi const* a = api();
+    if (!a || a->version < 2) return false;
+    std::string l(label), d(description);
+    return a->addCommand(std::string(mod).c_str(), std::string(command).c_str(), l.empty() ? nullptr : l.c_str(),
+                         d.empty() ? nullptr : d.c_str()) != 0;
 }
 
 inline bool setMetadata(std::string_view mod, std::string_view json) {

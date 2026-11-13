@@ -26,6 +26,7 @@ bool sendChord(Chord const& chord, HWND__* window);
 
 // Opens the chat (T, the game's default chat key), types "/<command>" and presses Enter. Only works in a
 // world. Call from a worker thread.
-bool sendChatCommand(std::string const& command, HWND__* window);
+// With submit = false the text is left in the chat for the player to finish.
+bool sendChatCommand(std::string const& command, HWND__* window, bool submit = true);
 
 } // namespace modmenu

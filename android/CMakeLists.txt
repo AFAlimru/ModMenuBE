@@ -88,6 +88,7 @@ add_library(${MOD_LIBRARY_NAME} SHARED
     # shared with the Windows build
     ${SHARED_SRC}/api/ExportedApi.cpp
     ${SHARED_SRC}/core/Adapter.cpp
+    ${SHARED_SRC}/core/ModCommands.cpp
     ${SHARED_SRC}/core/ConfigRegistry.cpp
     ${SHARED_SRC}/core/I18n.cpp
     ${SHARED_SRC}/core/JsonConfigDoc.cpp

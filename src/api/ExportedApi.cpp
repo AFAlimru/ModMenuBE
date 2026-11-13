@@ -1,3 +1,4 @@
+#include "core/ModCommands.h"
 #include "modmenu/ModMenuApi.h"
 
 #include "core/ConfigRegistry.h"
@@ -119,6 +120,7 @@ int unregister(char const* mod) {
     if (!mod) return 0;
     ConfigRegistry::instance().unregister(mod);
     ModRegistry::instance().clearRuntimeMetadata(mod);
+    ModCommands::instance().clearApi(mod);
     ui::requestRescan();
     return 1;
 }
@@ -135,10 +137,22 @@ int closeMenu() {
 
 int isMenuOpen() { return ui::isOpen() ? 1 : 0; }
 
+int addCommand(char const* mod, char const* command, char const* label, char const* description) {
+    if (!mod || !command) return 0;
+    ModCommand c;
+    c.command = command;
+    while (!c.command.empty() && (c.command.front() == '/' || c.command.front() == ' ')) c.command.erase(c.command.begin());
+    if (c.command.empty() || c.command.find_first_of("\r\n") != std::string::npos) return 0;
+    c.label       = s(label);
+    c.description = s(description);
+    ModCommands::instance().add(mod, std::move(c));
+    return 1;
+}
+
 ModMenuApi const kApi = {
     MODMENU_API_VERSION, sizeof(ModMenuApi), beginScreen, addCategory, addHeader, addBool, addInt, addFloat,
     addString, addEnum, addButton, setOnSave, setExternalScreen, setMetadata, unregister, openMenu, closeMenu,
-    isMenuOpen,
+    isMenuOpen, addCommand,
 };
 
 } // namespace

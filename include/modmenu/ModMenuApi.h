@@ -30,7 +30,7 @@
 extern "C" {
 #endif
 
-#define MODMENU_API_VERSION 1u
+#define MODMENU_API_VERSION 2u
 
 typedef int (*ModMenuGetBoolFn)(void* user);
 typedef void (*ModMenuSetBoolFn)(void* user, int value);
@@ -101,6 +101,15 @@ typedef struct ModMenuApi {
     int (*openMenu)(char const* mod, int openConfig);
     int (*closeMenu)(void);
     int (*isMenuOpen)(void);
+
+    /* ---- version 2 ---- check `version >= 2` before using these. */
+
+    /* Adds a command button to the mod's details page. `command` is typed
+     * into the chat without the leading '/' (e.g. "record start") and sent.
+     * `label` (button text) and `description` (tooltip) may be NULL.
+     * Commands registered with LeviLamina are also found automatically;
+     * use this for exact actions such as subcommands. */
+    int (*addCommand)(char const* mod, char const* command, char const* label, char const* description);
 } ModMenuApi;
 
 /* Returns NULL if ModMenuBE is older than `minVersion`. */

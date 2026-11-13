@@ -170,10 +170,10 @@ bool sendChord(Chord const& c, HWND__* window) {
     return ok;
 }
 
-bool sendChatCommand(std::string const& command, HWND__* window) {
+bool sendChatCommand(std::string const& command, HWND__* window, bool submit) {
     if (!sendChord(Chord{.vk = 'T'}, window)) return false;
     Sleep(350); // the chat screen opens on a later frame
-    std::wstring text = L"/" + fromUtf8(command);
+    std::wstring text = L"/" + fromUtf8(command) + (submit ? L"" : L" ");
     std::vector<INPUT> keys;
     for (wchar_t ch : text) {
         for (bool up : {false, true}) {
@@ -185,8 +185,10 @@ bool sendChatCommand(std::string const& command, HWND__* window) {
         }
     }
     bool ok = SendInput(UINT(keys.size()), keys.data(), sizeof(INPUT)) == keys.size();
-    Sleep(120);
-    ok = sendChord(Chord{.vk = VK_RETURN}, window) && ok;
+    if (submit) {
+        Sleep(120);
+        ok = sendChord(Chord{.vk = VK_RETURN}, window) && ok;
+    }
     if (!ok) log::warn("could not type the command /{} (error {})", command, GetLastError());
     return ok;
 }

@@ -6,6 +6,7 @@
 #include "core/I18n.h"
 #include "core/JsonConfigDoc.h"
 #include "core/LipCatalog.h"
+#include "core/ModCommands.h"
 #include "core/ModOpener.h"
 #include "core/Log.h"
 #include "core/ModRegistry.h"
@@ -230,26 +231,49 @@ void openOwnMenu(ModInfo const& mod) {
     }).detach();
 }
 
-void runCommand(ModInfo const& mod, AdapterCommand const& cmd) {
+void runCommand(ModInfo const& mod, ModCommand const& cmd) {
     HWND window = overlay::gameWindow();
-    log::info("running /{} for {}", cmd.command, mod.name);
+    log::info("{} /{} for {}", cmd.complete() ? "running" : "typing", cmd.command, mod.name);
     requestClose("run a mod command");
-    std::thread([command = cmd.command, window] {
+    std::thread([command = cmd.command, submit = cmd.complete(), window] {
         for (int i = 0; i < 100 && isOpen(); ++i) Sleep(10);
         Sleep(150);
-        sendChatCommand(command, window);
+        sendChatCommand(command, window, submit);
     }).detach();
 }
 
-// "commands" in modmenu.json: one button per chat command.
+// Every command the mod offers: modmenu.json first, then the C API, then what it registered with LeviLamina.
+// A registered root is left out when an exact command already starts with it ("record" vs "record start").
+std::vector<ModCommand> commandsOf(ModInfo const& mod) {
+    std::vector<ModCommand> out;
+    if (mod.adapter) {
+        for (auto const& a : mod.adapter->commands) {
+            ModCommand c;
+            c.command     = a.command;
+            c.label       = a.label.get();
+            c.description = a.description.get();
+            c.source      = ModCommand::Source::Adapter;
+            out.push_back(std::move(c));
+        }
+    }
+    for (auto& c : ModCommands::instance().forMod(mod.name)) {
+        bool covered = std::any_of(out.begin(), out.end(), [&](ModCommand const& o) {
+            return o.command == c.command || o.command.rfind(c.command + " ", 0) == 0;
+        });
+        if (!covered) out.push_back(std::move(c));
+    }
+    return out;
+}
+
 void drawCommands(ModInfo const& mod) {
-    if (!mod.adapter || mod.adapter->commands.empty()) return;
+    auto commands = commandsOf(mod);
+    if (commands.empty()) return;
     ImGui::Dummy({0, s(6)});
     ore::text(tr("commands"), col::TextDim, fonts::bold());
     bool first = true;
-    for (size_t i = 0; i < mod.adapter->commands.size(); ++i) {
-        auto const& cmd   = mod.adapter->commands[i];
-        std::string label = cmd.label.empty() ? "/" + cmd.command : cmd.label.get();
+    for (size_t i = 0; i < commands.size(); ++i) {
+        auto const& cmd   = commands[i];
+        std::string label = cmd.label.empty() ? "/" + cmd.command : cmd.label;
         fonts::note(label);
         float w = ore::badgeWidth(label.c_str()) + s(24);
         if (!first && ImGui::GetCursorPosX() + w < ImGui::GetContentRegionMax().x) ImGui::SameLine();
@@ -257,8 +281,10 @@ void drawCommands(ModInfo const& mod) {
         ImGui::PushID(int(i));
         if (ore::button("##cmd", label.c_str(), ore::Variant::Dark, {0, 0}, !mod.loaded)) runCommand(mod, cmd);
         std::string tip = "/" + cmd.command;
-        if (!cmd.description.empty()) tip += "\n" + cmd.description.get();
-        tip += "\n" + std::string(tr(mod.loaded ? "commands.tip" : "commands.not_loaded"));
+        if (!cmd.description.empty()) tip += "\n" + cmd.description;
+        tip += "\n" + std::string(tr(!mod.loaded       ? "commands.not_loaded"
+                                     : cmd.complete() ? "commands.tip"
+                                                      : "commands.tip_partial"));
         fonts::note(tip);
         ore::tooltip(tip.c_str());
         ImGui::PopID();
