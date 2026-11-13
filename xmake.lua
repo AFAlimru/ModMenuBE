@@ -1,7 +1,7 @@
 add_rules("mode.debug", "mode.release")
 
 set_project("ModMenuBE")
-set_version("0.1.1")
+set_version("0.2.0")
 
 add_requires("imgui v1.91.9", {configs = {shared = false, win32 = true, dx11 = true, freetype = false}})
 add_requires("minhook", {configs = {shared = false}})

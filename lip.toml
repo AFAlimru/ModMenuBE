@@ -1,6 +1,6 @@
 format = 4
 id = "github.com/AFAlimru/ModMenuBE"
-version = "0.1.1"
+version = "0.2.0"
 
 [info]
 name = "ModMenuBE"

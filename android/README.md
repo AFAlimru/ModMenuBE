@@ -1,4 +1,4 @@
-# ModMenuBE for Android (native `.so` mod) — preview
+# ModMenuBE for Android (native `.so` mod)
 
 A LeviLauncher Android `preload-native` mod. It hooks `eglSwapBuffers` and draws the same OreUI-styled menu as
 the Windows build (ImGui, OpenGL ES 3) on top of the game. Touch, Back and IME text come from the preloader input
@@ -32,9 +32,15 @@ Output: `build-arm64-v8a\ModMenuBE-<version>-arm64-v8a.levipack`. Import it in L
 
 ## Use
 
-- In a world: tap the **MOD** floating button (LeviLauncher Mod Menu → ModMenuBE must be on).
+- Tap the **MOD** floating button: a pixel button next to the game's emote/chat/pause buttons, top centre
+  (LeviLauncher Mod Menu → ModMenuBE must be on). Move, resize or fade it in LeviLauncher's HUD editor; ModMenuBE's
+  settings have shortcuts to that editor and to reset the position. While the menu is open LeviLauncher's floating
+  buttons are hidden.
 - With a hardware keyboard: **F8** anywhere.
 - **Back** leaves a sub page, then closes the menu.
 
-Dependencies fetched by CMake: preloader-android 0.2.3, Dear ImGui 1.91.9, nlohmann/json, fmt, stb_image.
-IME text needs a launcher runtime with preloader 0.2.3 or newer; on older ones the mod still loads.
+Dependencies fetched by CMake: preloader-android (pinned to the commit LeviLauncher-Android 1.6.1 ships, since the
+C++ structs must match the launcher's runtime), Dear ImGui 1.91.9, nlohmann/json, fmt, stb_image.
+
+Chinese text uses a CJK font from `/system/fonts`; fonts the ImGui rasteriser cannot parse (some phones ship
+variable CJK fonts) are skipped, and the built-in font is the last resort.

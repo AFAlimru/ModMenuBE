@@ -1,7 +1,7 @@
 {
     "name": "ModMenuBE",
     "entry": "ModMenuBE.dll",
-    "version": "0.1.1",
+    "version": "0.2.0",
     "type": "preload-native",
     "author": "AFAlimru",
     "description": "Java 版 ModMenu 的基岩版移植：在遊戲中按 F8 瀏覽、搜尋、啟用／停用與設定模組。",

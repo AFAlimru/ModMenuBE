@@ -10,7 +10,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(MOD_ID "ModMenuBE")
 set(MOD_NAME "ModMenuBE")
 set(MOD_AUTHOR "AFAlimru")
-set(MOD_VERSION "0.2.0-alpha.2")
+set(MOD_VERSION "0.2.0")
 set(MOD_LIBRARY_NAME "ModMenuBE")
 set(MOD_MINECRAFT_VERSIONS "[\"1.26.*\"]")
 

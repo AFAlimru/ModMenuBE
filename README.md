@@ -28,6 +28,8 @@ Minecraft 基岩版（Windows GDK）的模組選單。概念參照 Java 版的 [
 
 在 LeviLauncher 的模組瀏覽器或 [LeviMC 模組目錄](https://levimc.org/mods/) 搜尋 ModMenuBE 安裝（會一併裝上它需要的 LeviLamina）。
 
+Android（LeviLauncher-Android）：從 [Releases](https://github.com/AFAlimru/ModMenuBE/releases) 下載 `ModMenuBE-<版本>-arm64-v8a.levipack`，在 LeviLauncher 匯入，進遊戲後點畫面上方中間的 MOD 按鈕。詳見 [android/README.md](android/README.md)。
+
 手動安裝：從 [Releases](https://github.com/AFAlimru/ModMenuBE/releases) 下載 `ModMenuBE-client-windows-x64.zip`，解壓到實例的 `mods/ModMenuBE/`（裡面會有 `ModMenuBE.dll`、`manifest.json`、`adapters/`），例如：
 
 ```
@@ -276,7 +278,7 @@ A mod menu for Minecraft Bedrock (Windows GDK), modelled on Java's [ModMenu](htt
 
 ### Installing
 
-Search for ModMenuBE in LeviLauncher's mod browser or on [LeviMC Mods](https://levimc.org/mods/) (LeviLamina is installed with it). To install by hand, extract `ModMenuBE-client-windows-x64.zip` from [Releases](https://github.com/AFAlimru/ModMenuBE/releases) into the instance's `mods/ModMenuBE/` folder, e.g. `%LOCALAPPDATA%\LeviLauncher\Instances\<instance>\mods\ModMenuBE\`.
+Search for ModMenuBE in LeviLauncher's mod browser or on [LeviMC Mods](https://levimc.org/mods/) (LeviLamina is installed with it). On Android (LeviLauncher-Android), import `ModMenuBE-<version>-arm64-v8a.levipack` from [Releases](https://github.com/AFAlimru/ModMenuBE/releases) and tap the MOD button at the top centre in game; see [android/README.md](android/README.md). To install by hand, extract `ModMenuBE-client-windows-x64.zip` from [Releases](https://github.com/AFAlimru/ModMenuBE/releases) into the instance's `mods/ModMenuBE/` folder, e.g. `%LOCALAPPDATA%\LeviLauncher\Instances\<instance>\mods\ModMenuBE\`.
 
 ### Supporting ModMenuBE in your mod
 
