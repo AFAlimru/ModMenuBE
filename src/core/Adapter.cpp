@@ -124,8 +124,25 @@ std::shared_ptr<Adapter const> parseAdapter(std::filesystem::path const& path) {
         }
         if (a->open.hotkey.empty() && a->open.key.empty()) a->open.present = false;
     }
+    if (j.contains("commands") && j["commands"].is_array()) {
+        for (auto const& c : j["commands"]) {
+            AdapterCommand cmd;
+            if (c.is_string()) cmd.command = c.get<std::string>();
+            else if (c.is_object()) {
+                cmd.command     = str(c, "command");
+                cmd.label       = LocText::parse(c.value("label", json()));
+                cmd.description = LocText::parse(c.value("description", json()));
+            }
+            while (!cmd.command.empty() && (cmd.command.front() == '/' || cmd.command.front() == ' '))
+                cmd.command.erase(cmd.command.begin());
+            // One line only: a newline would send the chat early.
+            if (cmd.command.empty() || cmd.command.find_first_of("\r\n") != std::string::npos) continue;
+            a->commands.push_back(std::move(cmd));
+        }
+    }
     a->metadata = j;
     a->metadata.erase("open");
+    a->metadata.erase("commands");
     a->metadata.erase("config");
     a->metadata.erase("$schema");
     return a;

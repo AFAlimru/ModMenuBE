@@ -1,0 +1,49 @@
+{
+    "$schema": "https://raw.githubusercontent.com/AFAlimru/ModMenuBE/main/schema/modmenu.schema.json",
+    "commands": [
+        {
+            "command": "record start",
+            "label": {
+                "en_US": "Start recording",
+                "zh_TW": "開始錄影"
+            },
+            "description": {
+                "en_US": "Starts or resumes recording this session.",
+                "zh_TW": "開始或繼續錄製目前的遊戲畫面。"
+            }
+        },
+        {
+            "command": "record pause",
+            "label": {
+                "en_US": "Pause recording",
+                "zh_TW": "暫停錄影"
+            },
+            "description": {
+                "en_US": "Pauses the recording; Start recording resumes it.",
+                "zh_TW": "暫停錄影，按「開始錄影」繼續。"
+            }
+        },
+        {
+            "command": "record stop",
+            "label": {
+                "en_US": "Stop and save",
+                "zh_TW": "停止並儲存"
+            },
+            "description": {
+                "en_US": "Stops recording and exports the replay.",
+                "zh_TW": "停止錄影並匯出重播檔。"
+            }
+        },
+        {
+            "command": "playback version",
+            "label": {
+                "en_US": "Show version",
+                "zh_TW": "顯示版本"
+            },
+            "description": {
+                "en_US": "Prints the loaded Playback version in the chat.",
+                "zh_TW": "在聊天欄顯示目前載入的 Playback 版本。"
+            }
+        }
+    ]
+}

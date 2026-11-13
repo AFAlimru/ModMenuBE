@@ -182,7 +182,26 @@ Java 版的「設定」按鈕會直接開啟模組自己的設定畫面。那是
 - 選單沒打開時，可以把 `delayMs`（預設 150 毫秒）調大一點，讓遊戲有時間在 ModMenuBE 關閉後重新取得焦點。
 - 寫了 `open` 之後，`config` 描述的 JSON 設定檔還是可以用「設定檔」按鈕編輯。
 
-**模組作者還沒提供 `modmenu.json` 怎麼辦？** 任何人都可以寫一份，放在 `mods/ModMenuBE/adapters/<模組名稱>.json`。模組資料夾裡的 `modmenu.json` 優先。ModMenuBE 目前內建 LHolo、Lamium、LeviLamina 的適配檔，歡迎發 PR 新增。
+##### 指令按鈕（`commands`）
+
+模組靠聊天指令操作時（例如 Playback 的 `/record start`），可以列在 `commands`，詳細資訊頁會多一個「指令」區，每個指令一顆按鈕。按下後 ModMenuBE 會關閉、打開聊天欄（T 鍵）、幫玩家輸入指令並送出，所以要在世界中使用。目前只有 Windows 版支援。
+
+```json
+{
+    "commands": [
+        {
+            "command": "record start",
+            "label": { "en_US": "Start recording", "zh_TW": "開始錄影" },
+            "description": { "en_US": "Starts or resumes recording.", "zh_TW": "開始或繼續錄影。" }
+        },
+        "playback version"
+    ]
+}
+```
+
+`command` 不用加開頭的 `/`；只寫字串時，按鈕文字就是指令本身。
+
+**模組作者還沒提供 `modmenu.json` 怎麼辦？** 任何人都可以寫一份，放在 `mods/ModMenuBE/adapters/<模組名稱>.json`。模組資料夾裡的 `modmenu.json` 優先。ModMenuBE 目前內建 LHolo、Lamium、LeviLamina、Playback 的適配檔，歡迎發 PR 新增。
 
 #### 3. 用 C API（在程式裡註冊設定頁）
 
@@ -271,6 +290,8 @@ On Java, ModMenu's Config button opens the mod's own screen because Fabric mods 
 | nothing | falls back to a generic editor for `config/*.json` |
 | `"config": false` in `modmenu.json` | no Config button |
 | `open` in `modmenu.json` (the mod's menu hotkey) | closes ModMenuBE and **presses the mod's hotkey** for the player |
+
+Mods driven by chat commands can list them under `commands` in `modmenu.json` (each `{ "command": "record start", "label": …, "description": … }` or just a string, without the leading `/`). The details page then shows a Commands row; a button closes ModMenuBE, opens the chat (T), types the command and sends it, so it works in a world (Windows only). A Playback adapter ships with ModMenuBE.
 
 Mods that already have a settings UI can either add `open` to `modmenu.json` (no code; point `hotkey.file`/`hotkey.key` at where the player's binding is stored, since bindings can change) or call `setExternalScreen` (a few lines, independent of key bindings).
 

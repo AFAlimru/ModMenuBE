@@ -59,6 +59,14 @@ struct AdapterOpen {
     LocText     label;         // button text, default "Config"
 };
 
+// "commands": chat commands the details page offers as buttons. On Windows ModMenuBE closes, opens the chat
+// and types the command for the player.
+struct AdapterCommand {
+    std::string command;     // without the leading '/', e.g. "record start"
+    LocText     label;       // button text, default "/<command>"
+    LocText     description; // tooltip
+};
+
 // modmenu.json: how ModMenuBE presents a mod. Lives in the mod folder (the
 // author's copy) or in mods/ModMenuBE/adapters/<ModName>.json (a community
 // adapter for mods that do not ship one). The mod folder wins.
@@ -66,6 +74,7 @@ struct Adapter {
     std::filesystem::path    source;
     bool                     configDisabled = false; // "config": false
     AdapterOpen              open;
+    std::vector<AdapterCommand> commands;
     std::vector<AdapterFile> files;
     nlohmann::json           metadata;  // same keys as the manifest's "modmenu" block
     // Generic options; empty when the file is not described.

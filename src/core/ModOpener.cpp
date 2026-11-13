@@ -170,4 +170,25 @@ bool sendChord(Chord const& c, HWND__* window) {
     return ok;
 }
 
+bool sendChatCommand(std::string const& command, HWND__* window) {
+    if (!sendChord(Chord{.vk = 'T'}, window)) return false;
+    Sleep(350); // the chat screen opens on a later frame
+    std::wstring text = L"/" + fromUtf8(command);
+    std::vector<INPUT> keys;
+    for (wchar_t ch : text) {
+        for (bool up : {false, true}) {
+            INPUT in{};
+            in.type       = INPUT_KEYBOARD;
+            in.ki.wScan   = WORD(ch);
+            in.ki.dwFlags = KEYEVENTF_UNICODE | (up ? KEYEVENTF_KEYUP : 0);
+            keys.push_back(in);
+        }
+    }
+    bool ok = SendInput(UINT(keys.size()), keys.data(), sizeof(INPUT)) == keys.size();
+    Sleep(120);
+    ok = sendChord(Chord{.vk = VK_RETURN}, window) && ok;
+    if (!ok) log::warn("could not type the command /{} (error {})", command, GetLastError());
+    return ok;
+}
+
 } // namespace modmenu

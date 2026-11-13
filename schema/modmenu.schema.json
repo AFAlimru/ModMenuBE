@@ -118,6 +118,24 @@
                 "delayMs": { "type": "integer", "minimum": 0, "maximum": 2000, "default": 150 }
             }
         },
+        "commands": {
+            "type": "array",
+            "description": "Chat commands shown as buttons on the details page. On Windows ModMenuBE closes, opens the chat and types the command (works in a world).",
+            "items": {
+                "oneOf": [
+                    { "type": "string", "description": "The command without the leading slash." },
+                    {
+                        "type": "object",
+                        "required": ["command"],
+                        "properties": {
+                            "command": { "type": "string", "description": "The command without the leading slash, e.g. \"record start\"." },
+                            "label": { "$ref": "#/definitions/text" },
+                            "description": { "$ref": "#/definitions/text" }
+                        }
+                    }
+                ]
+            }
+        },
         "config": {
             "description": "false hides the config button. Otherwise the files to edit.",
             "oneOf": [

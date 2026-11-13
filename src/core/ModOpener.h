@@ -24,4 +24,8 @@ std::string          describeChord(Chord const& chord);
 // messages or poll GetAsyncKeyState both see it. Call from a worker thread.
 bool sendChord(Chord const& chord, HWND__* window);
 
+// Opens the chat (T, the game's default chat key), types "/<command>" and presses Enter. Only works in a
+// world. Call from a worker thread.
+bool sendChatCommand(std::string const& command, HWND__* window);
+
 } // namespace modmenu

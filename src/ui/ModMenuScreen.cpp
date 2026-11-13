@@ -229,6 +229,41 @@ void openOwnMenu(ModInfo const& mod) {
         sendChord(c, window);
     }).detach();
 }
+
+void runCommand(ModInfo const& mod, AdapterCommand const& cmd) {
+    HWND window = overlay::gameWindow();
+    log::info("running /{} for {}", cmd.command, mod.name);
+    requestClose("run a mod command");
+    std::thread([command = cmd.command, window] {
+        for (int i = 0; i < 100 && isOpen(); ++i) Sleep(10);
+        Sleep(150);
+        sendChatCommand(command, window);
+    }).detach();
+}
+
+// "commands" in modmenu.json: one button per chat command.
+void drawCommands(ModInfo const& mod) {
+    if (!mod.adapter || mod.adapter->commands.empty()) return;
+    ImGui::Dummy({0, s(6)});
+    ore::text(tr("commands"), col::TextDim, fonts::bold());
+    bool first = true;
+    for (size_t i = 0; i < mod.adapter->commands.size(); ++i) {
+        auto const& cmd   = mod.adapter->commands[i];
+        std::string label = cmd.label.empty() ? "/" + cmd.command : cmd.label.get();
+        fonts::note(label);
+        float w = ore::badgeWidth(label.c_str()) + s(24);
+        if (!first && ImGui::GetCursorPosX() + w < ImGui::GetContentRegionMax().x) ImGui::SameLine();
+        first = false;
+        ImGui::PushID(int(i));
+        if (ore::button("##cmd", label.c_str(), ore::Variant::Dark, {0, 0}, !mod.loaded)) runCommand(mod, cmd);
+        std::string tip = "/" + cmd.command;
+        if (!cmd.description.empty()) tip += "\n" + cmd.description.get();
+        tip += "\n" + std::string(tr(mod.loaded ? "commands.tip" : "commands.not_loaded"));
+        fonts::note(tip);
+        ore::tooltip(tip.c_str());
+        ImGui::PopID();
+    }
+}
 #endif
 
 std::string joined(std::vector<std::string> const& v) {
@@ -550,6 +585,7 @@ void drawDetails(ModInfo const& mod) {
 #ifdef _WIN32
     ImGui::SameLine();
     if (ore::button("##folder", tr("open_folder"), ore::Variant::Dark)) openFolder(mod.folder);
+    drawCommands(mod);
 #endif
 
     // Update box
