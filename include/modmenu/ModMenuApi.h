@@ -106,8 +106,14 @@ typedef struct ModMenuApi {
 /* Returns NULL if ModMenuBE is older than `minVersion`. */
 typedef ModMenuApi const* (*ModMenu_GetApiFn)(uint32_t minVersion);
 
+#if defined(_WIN32)
+#define MODMENU_EXPORT __declspec(dllexport)
+#else
+#define MODMENU_EXPORT __attribute__((visibility("default")))
+#endif
+
 #if defined(MODMENU_BUILDING)
-__declspec(dllexport) ModMenuApi const* ModMenu_GetApi(uint32_t minVersion);
+MODMENU_EXPORT ModMenuApi const* ModMenu_GetApi(uint32_t minVersion);
 #endif
 
 #ifdef __cplusplus

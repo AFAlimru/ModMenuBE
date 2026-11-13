@@ -26,7 +26,9 @@ Minecraft 基岩版（Windows GDK）的模組選單。概念參照 Java 版的 [
 
 ### 安裝
 
-把 `ModMenuBE` 資料夾（`ModMenuBE.dll`、`manifest.json`、`adapters/`）放進實例的 `mods/`，例如：
+在 LeviLauncher 的模組瀏覽器或 [LeviMC 模組目錄](https://levimc.org/mods/) 搜尋 ModMenuBE 安裝（會一併裝上它需要的 LeviLamina）。
+
+手動安裝：從 [Releases](https://github.com/AFAlimru/ModMenuBE/releases) 下載 `ModMenuBE-client-windows-x64.zip`，解壓到實例的 `mods/ModMenuBE/`（裡面會有 `ModMenuBE.dll`、`manifest.json`、`adapters/`），例如：
 
 ```
 %LOCALAPPDATA%\LeviLauncher\Instances\<實例>\mods\ModMenuBE\
@@ -252,6 +254,10 @@ A mod menu for Minecraft Bedrock (Windows GDK), modelled on Java's [ModMenu](htt
 - Config screens from `modmenu.json`, from the C API, or a generic `config/*.json` editor.
 - Update checks through lip, GitHub Releases, CurseForge or a JSON URL.
 - Icon, description, license and README are filled in from the [LeviMC mod catalogue](https://levimc.org/mods/).
+
+### Installing
+
+Search for ModMenuBE in LeviLauncher's mod browser or on [LeviMC Mods](https://levimc.org/mods/) (LeviLamina is installed with it). To install by hand, extract `ModMenuBE-client-windows-x64.zip` from [Releases](https://github.com/AFAlimru/ModMenuBE/releases) into the instance's `mods/ModMenuBE/` folder, e.g. `%LOCALAPPDATA%\LeviLauncher\Instances\<instance>\mods\ModMenuBE\`.
 
 ### Supporting ModMenuBE in your mod
 

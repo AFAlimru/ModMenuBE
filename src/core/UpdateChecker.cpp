@@ -6,7 +6,10 @@
 #include "core/LipCatalog.h"
 #include "core/Util.h"
 
+#ifdef _WIN32
 #include <Windows.h>
+#endif
+#include <cstdlib>
 
 #include <nlohmann/json.hpp>
 
@@ -120,8 +123,12 @@ void checkLip(ModInfo const& mod, std::string const& tooth, UpdateResult& r) {
 void checkCurseForge(ModInfo const& mod, std::string const& projectId, UpdateResult& r) {
     std::string key = settings().curseforgeApiKey();
     if (key.empty()) {
+#ifdef _WIN32
         wchar_t buf[256]{};
         if (GetEnvironmentVariableW(L"CURSEFORGE_API_KEY", buf, 256) > 0) key = toUtf8(buf);
+#else
+        if (char const* env = std::getenv("CURSEFORGE_API_KEY")) key = env;
+#endif
     }
     if (key.empty()) {
         r.state = UpdateResult::State::Error;

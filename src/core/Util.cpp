@@ -1,7 +1,9 @@
 #include "core/Util.h"
 
+#ifdef _WIN32
 #include <Windows.h>
 #include <shellapi.h>
+#endif
 
 #include <algorithm>
 #include <cctype>
@@ -11,6 +13,7 @@
 
 namespace modmenu {
 
+#ifdef _WIN32
 std::string toUtf8(std::wstring_view text) {
     if (text.empty()) return {};
     int size = WideCharToMultiByte(CP_UTF8, 0, text.data(), int(text.size()), nullptr, 0, nullptr, nullptr);
@@ -28,6 +31,44 @@ std::wstring fromUtf8(std::string_view text) {
 }
 
 std::string pathUtf8(std::filesystem::path const& path) { return toUtf8(path.wstring()); }
+#else
+// wchar_t is UTF-32 here.
+std::string toUtf8(std::wstring_view text) {
+    std::string out;
+    out.reserve(text.size());
+    for (wchar_t wc : text) {
+        auto c = uint32_t(wc);
+        if (c < 0x80) out += char(c);
+        else if (c < 0x800) out += char(0xC0 | (c >> 6)), out += char(0x80 | (c & 0x3F));
+        else if (c < 0x10000)
+            out += char(0xE0 | (c >> 12)), out += char(0x80 | ((c >> 6) & 0x3F)), out += char(0x80 | (c & 0x3F));
+        else
+            out += char(0xF0 | (c >> 18)), out += char(0x80 | ((c >> 12) & 0x3F)),
+                out += char(0x80 | ((c >> 6) & 0x3F)), out += char(0x80 | (c & 0x3F));
+    }
+    return out;
+}
+
+std::wstring fromUtf8(std::string_view text) {
+    std::wstring out;
+    out.reserve(text.size());
+    for (size_t i = 0; i < text.size();) {
+        auto     b = uint8_t(text[i]);
+        uint32_t c = 0;
+        int      n = b < 0x80 ? 1 : (b >> 5) == 6 ? 2 : (b >> 4) == 14 ? 3 : (b >> 3) == 30 ? 4 : 1;
+        if (n == 1) c = b < 0x80 ? b : 0xFFFD;
+        else {
+            c = b & (0xFF >> (n + 1));
+            for (int k = 1; k < n && i + k < text.size(); ++k) c = (c << 6) | (uint8_t(text[i + k]) & 0x3F);
+        }
+        out += wchar_t(c);
+        i += size_t(n);
+    }
+    return out;
+}
+
+std::string pathUtf8(std::filesystem::path const& path) { return path.string(); }
+#endif
 
 std::string toLower(std::string_view text) {
     std::string out(text);
@@ -106,20 +147,26 @@ bool writeFileAtomic(std::filesystem::path const& path, std::string_view data) {
     std::error_code ec;
     std::filesystem::create_directories(path.parent_path(), ec);
     auto tmp = path;
-    tmp += L".tmp";
+    tmp += ".tmp";
     {
         std::ofstream out(tmp, std::ios::binary | std::ios::trunc);
         if (!out) return false;
         out.write(data.data(), std::streamsize(data.size()));
         if (!out) return false;
     }
+#ifdef _WIN32
     if (!MoveFileExW(tmp.c_str(), path.c_str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)) {
+#else
+    std::filesystem::rename(tmp, path, ec);
+    if (ec) {
+#endif
         std::filesystem::remove(tmp, ec);
         return false;
     }
     return true;
 }
 
+#ifdef _WIN32
 bool openExternal(std::string const& target) {
     std::string lower = toLower(target);
     if (lower.rfind("https://", 0) != 0 && lower.rfind("http://", 0) != 0) return false;
@@ -131,5 +178,6 @@ bool openFolder(std::filesystem::path const& folder) {
     return reinterpret_cast<INT_PTR>(ShellExecuteW(nullptr, L"open", folder.c_str(), nullptr, nullptr, SW_SHOWNORMAL))
          > 32;
 }
+#endif // openExternal / openFolder live in the Android platform layer
 
 } // namespace modmenu

@@ -1,6 +1,8 @@
 #pragma once
 
+#ifdef _WIN32
 #include <Windows.h>
+#endif
 
 // Callbacks from the overlay into the menu. All run on the render thread
 // except handleWindowMessage (window thread).
@@ -15,8 +17,13 @@ void drawFrame();
 // The D3D11 device is going away; drop textures created with it.
 void onDeviceLost();
 
+#ifdef _WIN32
 // Window thread. Returns true if the message was consumed (hotkey, key capture).
 bool handleWindowMessage(UINT msg, WPARAM wParam, LPARAM lParam);
+#else
+// Base UI scale (dp -> px) chosen by the platform; 0 = derive from the window height.
+void setPlatformScale(float scale);
+#endif
 // Whether keyboard/mouse input must be kept from the game right now.
 bool blocksGameInput();
 

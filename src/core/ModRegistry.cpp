@@ -4,11 +4,14 @@
 #include "core/Paths.h"
 #include "core/Util.h"
 
+#ifdef _WIN32
 #include <Windows.h>
+#endif
 
 #include <nlohmann/json.hpp>
 
 #include <algorithm>
+#include <fstream>
 
 namespace modmenu {
 
@@ -123,10 +126,42 @@ void applyMeta(ModInfo& info, json const& meta) {
     }
 }
 
+#ifdef _WIN32
 bool isModuleLoaded(std::filesystem::path const& dll) {
     if (dll.empty()) return false;
     return GetModuleHandleW(dll.c_str()) != nullptr;
 }
+#else
+// The preloader may load a copy from its cache, so match the library file name in our own mappings.
+bool isModuleLoaded(std::filesystem::path const& so) {
+    if (so.empty()) return false;
+    std::string   want = "/" + so.filename().string();
+    std::ifstream maps("/proc/self/maps");
+    std::string   line;
+    while (std::getline(maps, line)) {
+        if (line.size() >= want.size() && line.compare(line.size() - want.size(), want.size(), want) == 0) return true;
+    }
+    return false;
+}
+
+// LeviLauncher (Android) keeps the enabled switches in mods/mods_config.json:
+// [{"name": <folder name>, "enabled": bool, "order": n}, ...]. A missing entry means enabled.
+std::filesystem::path launcherConfigPath() { return paths::modsDir() / "mods_config.json"; }
+
+std::map<std::string, bool> readLauncherEnabled() {
+    std::map<std::string, bool> out;
+    std::string                 text;
+    if (!readFile(launcherConfigPath(), text)) return out;
+    auto j = json::parse(text, nullptr, false);
+    if (!j.is_array()) return out;
+    for (auto const& e : j) {
+        if (e.is_object() && e.contains("name") && e["name"].is_string() && e.contains("enabled")
+            && e["enabled"].is_boolean())
+            out[e["name"].get<std::string>()] = e["enabled"].get<bool>();
+    }
+    return out;
+}
+#endif
 
 std::vector<std::filesystem::path> findConfigFiles(std::filesystem::path const& folder) {
     std::vector<std::filesystem::path> out;
@@ -166,6 +201,9 @@ void ModRegistry::rescan() {
         runtimeMeta = runtimeMeta_;
     }
 
+#ifndef _WIN32
+    auto const launcherEnabled = readLauncherEnabled();
+#endif
     for (auto it = std::filesystem::directory_iterator(modsDir, ec);
          !ec && it != std::filesystem::directory_iterator(); it.increment(ec)) {
         if (!it->is_directory(ec)) continue;
@@ -174,9 +212,14 @@ void ModRegistry::rescan() {
         auto closed = folder / L"manifest.json.close";
         bool enabled = std::filesystem::is_regular_file(open, ec);
         if (!enabled && !std::filesystem::is_regular_file(closed, ec)) continue;
+#ifndef _WIN32
+        if (!enabled) continue; // the Android launcher ignores manifest.json.close
+        if (auto le = launcherEnabled.find(pathUtf8(folder.filename())); le != launcherEnabled.end())
+            enabled = le->second;
+#endif
 
         std::string text;
-        if (!readFile(enabled ? open : closed, text)) continue;
+        if (!readFile(std::filesystem::is_regular_file(open, ec) ? open : closed, text)) continue;
         auto manifest = json::parse(text, nullptr, false, true);
         if (!manifest.is_object()) {
             log::warn("skipping {}: manifest is not valid JSON", pathUtf8(folder.filename()));
@@ -290,6 +333,29 @@ bool ModRegistry::setEnabled(std::string const& name, bool enabled, std::string&
         return false;
     }
     if (mod->enabled == enabled) return true;
+#ifndef _WIN32
+    {
+        std::string text;
+        auto        cfg = json::array();
+        if (readFile(launcherConfigPath(), text)) {
+            auto j = json::parse(text, nullptr, false);
+            if (j.is_array()) cfg = std::move(j);
+        }
+        std::string id    = pathUtf8(mod->folder.filename());
+        bool        found = false;
+        for (auto& e : cfg) {
+            if (e.is_object() && e.value("name", std::string()) == id) {
+                e["enabled"] = enabled;
+                found        = true;
+            }
+        }
+        if (!found) cfg.push_back({{"name", id}, {"enabled", enabled}, {"order", int(cfg.size())}});
+        if (!writeFileAtomic(launcherConfigPath(), cfg.dump(2))) {
+            error = "could not write mods_config.json";
+            return false;
+        }
+    }
+#else
     auto open   = mod->folder / L"manifest.json";
     auto closed = mod->folder / L"manifest.json.close";
     auto const& from = enabled ? closed : open;
@@ -298,6 +364,7 @@ bool ModRegistry::setEnabled(std::string const& name, bool enabled, std::string&
         error = "rename failed (Windows error " + std::to_string(GetLastError()) + ")";
         return false;
     }
+#endif
     log::info("{} {}", enabled ? "enabled" : "disabled", name);
     rescan();
     return true;
@@ -325,6 +392,10 @@ void ModRegistry::clearRuntimeMetadata(std::string const& name) {
     runtimeMeta_.erase(name);
 }
 
+#ifdef _WIN32
 bool ModRegistry::leviLaminaLoaded() const { return GetModuleHandleW(L"LeviLamina.dll") != nullptr; }
+#else
+bool ModRegistry::leviLaminaLoaded() const { return false; } // no LeviLamina on Android
+#endif
 
 } // namespace modmenu

@@ -2,7 +2,23 @@
 
 #include "core/Settings.h"
 
+#ifdef _WIN32
 #include <Windows.h>
+#else
+#include <sys/system_properties.h>
+#endif
+
+#ifdef _WIN32
+#define MODMENU_AUTO_LANG_EN "Follow Windows"
+#define MODMENU_AUTO_LANG_ZH "跟隨 Windows"
+#define MODMENU_DISABLED_EN  "Disabled (manifest.json.close)"
+#define MODMENU_DISABLED_ZH  "已停用（manifest.json.close）"
+#else
+#define MODMENU_DISABLED_EN  "Disabled (LeviLauncher mod list)"
+#define MODMENU_DISABLED_ZH  "已停用（LeviLauncher 模組清單）"
+#define MODMENU_AUTO_LANG_EN "Follow system"
+#define MODMENU_AUTO_LANG_ZH "跟隨系統"
+#endif
 
 #include <atomic>
 #include <map>
@@ -72,7 +88,7 @@ Table const kEnUs = {
     {"state", "State"},
     {"state.loaded", "Loaded"},
     {"state.not_loaded", "Not loaded"},
-    {"state.disabled", "Disabled (manifest.json.close)"},
+    {"state.disabled", MODMENU_DISABLED_EN},
     {"restart_required", "Restart Minecraft to apply mod changes."},
     {"self_disable", "ModMenuBE cannot disable itself. Use LeviLauncher's Manage Mods instead."},
     {"confirm_disable_ll", "Disable LeviLamina? Every LeviLamina mod (type native) will stop loading."},
@@ -100,7 +116,7 @@ Table const kEnUs = {
     {"settings.hotkey", "Open menu key"},
     {"settings.hotkey.press", "Press a key..."},
     {"settings.language", "Language"},
-    {"settings.language.auto", "Follow Windows"},
+    {"settings.language.auto", MODMENU_AUTO_LANG_EN},
     {"settings.check_updates", "Check updates when opening"},
     {"settings.block_input", "Block game input while open"},
     {"settings.fullscreen", "Full-screen menu"},
@@ -108,6 +124,7 @@ Table const kEnUs = {
     {"settings.curseforge_key", "CurseForge API key"},
     {"settings.curseforge_key.tip", "Needed only for mods that use CurseForge as update source. Empty = CURSEFORGE_API_KEY."},
     {"hint", "%s: open/close  ·  Esc: close"},
+    {"hint.android", "MOD button or F8: open/close  ·  Back: close"},
     {"leviLamina_missing", "LeviLamina is not loaded: LeviLamina mods are listed from their manifests only."},
 };
 
@@ -169,7 +186,7 @@ Table const kZhTw = {
     {"state", "狀態"},
     {"state.loaded", "已載入"},
     {"state.not_loaded", "未載入"},
-    {"state.disabled", "已停用（manifest.json.close）"},
+    {"state.disabled", MODMENU_DISABLED_ZH},
     {"restart_required", "重新啟動 Minecraft 後才會套用模組變更。"},
     {"self_disable", "ModMenuBE 無法停用自己，請到 LeviLauncher 的「管理模組」停用。"},
     {"confirm_disable_ll", "確定要停用 LeviLamina？所有 LeviLamina 模組（native 類型）都會無法載入。"},
@@ -197,7 +214,7 @@ Table const kZhTw = {
     {"settings.hotkey", "開啟選單按鍵"},
     {"settings.hotkey.press", "請按下按鍵…"},
     {"settings.language", "語言"},
-    {"settings.language.auto", "跟隨 Windows"},
+    {"settings.language.auto", MODMENU_AUTO_LANG_ZH},
     {"settings.check_updates", "開啟時檢查更新"},
     {"settings.block_input", "開啟時阻擋遊戲輸入"},
     {"settings.fullscreen", "全螢幕顯示選單"},
@@ -205,6 +222,7 @@ Table const kZhTw = {
     {"settings.curseforge_key", "CurseForge API 金鑰"},
     {"settings.curseforge_key.tip", "只有以 CurseForge 為更新來源的模組需要。留空則使用 CURSEFORGE_API_KEY 環境變數。"},
     {"hint", "%s：開啟／關閉 · Esc：關閉"},
+    {"hint.android", "MOD 按鈕或 F8：開啟／關閉 · 返回鍵：關閉"},
     {"leviLamina_missing", "LeviLamina 未載入：LeviLamina 模組只會顯示 manifest 資訊。"},
 };
 
@@ -216,8 +234,14 @@ std::atomic<bool>         gZh{false};
 void reloadLanguage() {
     std::string lang = settings().language();
     if (lang == "auto" || lang.empty()) {
+#ifdef _WIN32
         LANGID id = GetUserDefaultUILanguage();
         lang      = PRIMARYLANGID(id) == LANG_CHINESE ? "zh_TW" : "en_US";
+#else
+        char value[PROP_VALUE_MAX]{};
+        if (__system_property_get("persist.sys.locale", value) <= 0) __system_property_get("ro.product.locale", value);
+        lang = std::string(value).rfind("zh", 0) == 0 ? "zh_TW" : "en_US";
+#endif
     }
     bool zh = lang.rfind("zh", 0) == 0;
     gZh     = zh;

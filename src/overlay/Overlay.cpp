@@ -1,6 +1,7 @@
 #include "overlay/Overlay.h"
 
 #include "core/Log.h"
+#include "ui/Fonts.h"
 #include "ui/MenuControl.h"
 #include "ui/Ui.h"
 
@@ -10,6 +11,7 @@
 #include <dxgi1_4.h>
 
 #include <MinHook.h>
+#include <imm.h>
 #include <imgui.h>
 #include <imgui_impl_dx11.h>
 #include <imgui_impl_win32.h>
@@ -87,6 +89,32 @@ struct QueuedMessage {
 std::mutex                 gMessageMutex;
 std::vector<QueuedMessage> gMessages;
 
+// Bedrock keeps the IME detached from its window outside its own text fields. While one of our text
+// fields has focus we attach the default IME context (window thread), and detach it again afterwards.
+constexpr UINT kImeMessage = WM_APP + 0x4D4D;
+bool           gImeRequested = false; // render thread: last state posted
+bool           gImeForced    = false; // window thread: we attached the context
+
+void setImeEnabled(HWND hwnd, bool on) {
+    if (on) {
+        if (HIMC himc = ImmGetContext(hwnd)) { // the game already has one attached
+            ImmReleaseContext(hwnd, himc);
+            return;
+        }
+        gImeForced = ImmAssociateContextEx(hwnd, nullptr, IACE_DEFAULT) != FALSE;
+        log::info("IME context attached for text input: {}", gImeForced);
+    } else if (gImeForced) {
+        ImmAssociateContext(hwnd, nullptr);
+        gImeForced = false;
+    }
+}
+
+void requestIme(bool on) {
+    if (on == gImeRequested || !gWindow) return;
+    gImeRequested = on;
+    PostMessageW(gWindow, kImeMessage, on ? 1 : 0, 0);
+}
+
 void queueMessage(UINT msg, WPARAM wParam, LPARAM lParam) {
     std::lock_guard lock(gMessageMutex);
     if (gMessages.size() < 4096) gMessages.push_back({msg, wParam, lParam});
@@ -98,7 +126,15 @@ void drainMessages() {
         std::lock_guard lock(gMessageMutex);
         pending.swap(gMessages);
     }
-    for (auto const& m : pending) ImGui_ImplWin32_WndProcHandler(gWindow, m.msg, m.wParam, m.lParam);
+    for (auto const& m : pending) {
+        if (m.msg == WM_CHAR && m.wParam >= 0x80 && (m.wParam < 0xD800 || m.wParam > 0xDFFF)) {
+            wchar_t w = wchar_t(m.wParam);
+            char    utf8[8]{};
+            if (int n = WideCharToMultiByte(CP_UTF8, 0, &w, 1, utf8, sizeof(utf8), nullptr, nullptr); n > 0)
+                ui::fonts::note(std::string_view(utf8, size_t(n))); // typed CJK outside the preloaded set
+        }
+        ImGui_ImplWin32_WndProcHandler(gWindow, m.msg, m.wParam, m.lParam);
+    }
 }
 
 void releaseBackBuffers() {
@@ -211,6 +247,10 @@ LRESULT CALLBACK wndProcHook(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) 
         std::lock_guard lock(gRenderMutex);
         releaseBackBuffers();
     }
+    if (msg == kImeMessage) {
+        setImeEnabled(hwnd, wParam != 0);
+        return 0;
+    }
     if (ui::handleWindowMessage(msg, wParam, lParam)) return 0;
 
     if (ui::isOpen() && msg != WM_SETCURSOR && msg != WM_INPUT) queueMessage(msg, wParam, lParam);
@@ -252,7 +292,10 @@ LRESULT CALLBACK wndProcHook(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) 
         case WM_IME_STARTCOMPOSITION:
         case WM_IME_ENDCOMPOSITION:
             if (msg == WM_SYSKEYDOWN && wParam == VK_F4) break; // keep Alt+F4
+            // Composition and WM_IME_CHAR go to DefWindowProc: it turns the committed text into the WM_CHAR
+            // messages ImGui reads (returning 0 for WM_IME_CHAR used to drop every IME character).
             return msg == WM_IME_COMPOSITION || msg == WM_IME_STARTCOMPOSITION || msg == WM_IME_ENDCOMPOSITION
+                        || msg == WM_IME_CHAR
                      ? DefWindowProcW(hwnd, msg, wParam, lParam)
                      : 0;
         default: break;
@@ -285,6 +328,7 @@ void renderFrame(IDXGISwapChain* swapChain) {
         if (SUCCEEDED(swapChain->GetDesc(&desc)) && IsWindow(desc.OutputWindow)) attachWindow(desc.OutputWindow);
     }
     if (!ui::wantsFrame()) {
+        requestIme(false);
         {
             std::lock_guard lock(gMessageMutex);
             gMessages.clear();
@@ -331,6 +375,7 @@ void renderFrame(IDXGISwapChain* swapChain) {
     ImGui::NewFrame();
     ui::drawFrame();
     ImGui::Render();
+    requestIme(ImGui::GetIO().WantTextInput);
 
     auto& buffer = gBuffers[index];
     if (gIsD3D12) gDevice11On12->AcquireWrappedResources(&buffer.resource, 1);

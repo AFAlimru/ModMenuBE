@@ -1,0 +1,25 @@
+format = 4
+id = "github.com/AFAlimru/ModMenuBE"
+version = "0.1.1"
+
+[info]
+name = "ModMenuBE"
+description = "A mod menu for Minecraft Bedrock in the OreUI style: press F8 in game to browse, search, enable, disable and configure your mods."
+tags = ["utility"]
+
+# ModMenuBE is a preload-native mod and also runs without LeviLamina (the camera is then not locked
+# while the menu is open). The dependency is declared so that launchers install it alongside
+# LeviLamina, as LeviMC Mods lists LeviLamina mods. The range starts above 26.60.6, the last
+# tooth.json release of LeviLamina, whose "" variant is the server build.
+[[variants.""]]
+side = "client"
+platform = "win-x64"
+preserve = ["mods/ModMenuBE/config/"]
+purge = ["mods/ModMenuBE/cache/", "mods/ModMenuBE/logs/"]
+
+[variants."".deps]
+"github.com/LiteLDev/LeviLamina" = ">26.60.6 <26.61.0"
+
+[[variants."".assets]]
+type = "mcmod"
+urls = ["https://github.com/AFAlimru/ModMenuBE/releases/download/v{{version}}/ModMenuBE-client-windows-x64.zip"]

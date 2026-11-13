@@ -13,7 +13,12 @@
 #include "core/Settings.h"
 #include "core/UpdateChecker.h"
 #include "core/Util.h"
+#ifdef _WIN32
 #include "overlay/Overlay.h"
+#else
+#include <pthread.h>
+#include <unistd.h>
+#endif
 #include "ui/Fonts.h"
 #include "ui/IconCache.h"
 #include "ui/Markdown.h"
@@ -84,6 +89,7 @@ void showToast(std::string text) {
     gState.toastUntil = ImGui::GetTime() + 4.0;
 }
 
+#ifdef _WIN32
 std::string keyName(int vk) {
     UINT scan = MapVirtualKeyW(UINT(vk), MAPVK_VK_TO_VSC);
     LONG lp   = LONG(scan << 16);
@@ -94,6 +100,7 @@ std::string keyName(int vk) {
     if (GetKeyNameTextW(lp, name, 64) > 0) return toUtf8(name);
     return "VK " + std::to_string(vk);
 }
+#endif
 
 // ---------------------------------------------------------------- helpers
 ImU32 tileColor(std::string const& name) {
@@ -175,8 +182,14 @@ bool hasConfig(ModInfo const& mod) {
 }
 
 // ---------------------------------------------------------------- opening a mod's own menu
+#ifdef _WIN32
 bool opensOwnMenu(ModInfo const& mod) { return mod.adapter && mod.adapter->open.present; }
+#else
+// Opening another mod's menu means pressing its hotkey; there is no keyboard to press on a phone.
+bool opensOwnMenu(ModInfo const&) { return false; }
+#endif
 
+#ifdef _WIN32
 // The player's current binding, read fresh each time so rebinding in the mod is followed.
 // Returns nullopt when the key is unbound; `text` gets the raw value for messages.
 std::optional<Chord> currentOpenChord(ModInfo const& mod, std::string& text) {
@@ -215,6 +228,7 @@ void openOwnMenu(ModInfo const& mod) {
         sendChord(c, window);
     }).detach();
 }
+#endif
 
 std::string joined(std::vector<std::string> const& v) {
     std::string out;
@@ -266,7 +280,11 @@ std::mutex                                                       gReadmeMutex;
 std::map<std::string, std::shared_ptr<markdown::Document const>> gReadmeDocs;
 std::set<std::string>                                            gReadmePending;
 
+#ifdef _WIN32
 DWORD WINAPI parseReadmeThread(LPVOID param) {
+#else
+void* parseReadmeThread(void* param) {
+#endif
     std::unique_ptr<ReadmeJob>                job(static_cast<ReadmeJob*>(param));
     std::shared_ptr<markdown::Document const> doc;
     try {
@@ -291,10 +309,21 @@ std::shared_ptr<markdown::Document const> readmeDoc(std::string const& key, std:
         gReadmePending.insert(key);
     }
     auto* job = new ReadmeJob{key, text};
+#ifdef _WIN32
     if (HANDLE t = CreateThread(nullptr, 64 * 1024 * 1024, parseReadmeThread, job, STACK_SIZE_PARAM_IS_A_RESERVATION,
                                 nullptr)) {
         CloseHandle(t);
     } else {
+#else
+    pthread_attr_t attr;
+    pthread_attr_init(&attr);
+    pthread_attr_setstacksize(&attr, 64 * 1024 * 1024);
+    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+    pthread_t thread{};
+    int       rc = pthread_create(&thread, &attr, parseReadmeThread, job);
+    pthread_attr_destroy(&attr);
+    if (rc != 0) {
+#endif
         delete job;
         std::lock_guard lock(gReadmeMutex);
         gReadmePending.erase(key);
@@ -484,6 +513,7 @@ void drawDetails(ModInfo const& mod) {
     auto screen       = ConfigRegistry::instance().get(mod.name);
     bool apiScreen    = screen && (screen->external || !screen->categories.empty());
     bool configurable = hasConfig(mod) && !gState.faultedScreens.count(mod.name);
+#ifdef _WIN32
     if (!apiScreen && opensOwnMenu(mod)) {
         // Config opens the mod's own menu; its JSON files stay one click away.
         std::string label = mod.adapter->open.label.empty() ? tr("config") : mod.adapter->open.label.get();
@@ -499,7 +529,9 @@ void drawDetails(ModInfo const& mod) {
             ImGui::SameLine();
             if (ore::button("##configfiles", tr("json_editor"), ore::Variant::Dark)) openConfigFor(mod);
         }
-    } else if (ore::button("##config", tr("config"), ore::Variant::Primary, {0, 0}, !configurable)) {
+    } else
+#endif
+    if (ore::button("##config", tr("config"), ore::Variant::Primary, {0, 0}, !configurable)) {
         openConfigFor(mod);
     }
     ImGui::SameLine();
@@ -510,8 +542,10 @@ void drawDetails(ModInfo const& mod) {
         else toggleEnabled(mod);
     }
     if (mod.self) ore::tooltip(tr("self_disable"));
+#ifdef _WIN32
     ImGui::SameLine();
     if (ore::button("##folder", tr("open_folder"), ore::Variant::Dark)) openFolder(mod.folder);
+#endif
 
     // Update box
     auto upd = UpdateChecker::instance().result(mod.name);
@@ -1064,7 +1098,9 @@ void applyRequests() {
             gState.checkedUpdatesThisSession = true;
             UpdateChecker::instance().checkAll();
         }
+#ifdef _WIN32
         ClipCursor(nullptr);
+#endif
         gState.view = View::List;
     } else if (r.rescan && open) {
         ModRegistry::instance().rescan();
@@ -1188,7 +1224,9 @@ void drawFooter(ImVec2 min, float width, float height) {
     };
 
     if (gState.view == View::List) {
+#ifdef _WIN32
         if (placeRight("##modsdir", tr("open_mods_folder"), ore::Variant::Dark, false)) openFolder(paths::modsDir());
+#endif
         if (placeRight("##refresh", tr("refresh"), ore::Variant::Dark, false)) ModRegistry::instance().rescan();
         bool running = UpdateChecker::instance().running();
         if (placeRight("##updates", running ? tr("checking_updates") : tr("check_updates"), ore::Variant::Dark,
@@ -1214,10 +1252,13 @@ void drawFooter(ImVec2 min, float width, float height) {
     } else if (ModRegistry::instance().needsRestart()) {
         msg   = tr("restart_required");
         color = col::Yellow;
-    } else if (gState.view == View::List && !ModRegistry::instance().leviLaminaLoaded()) {
-        msg = tr("leviLamina_missing");
     } else {
-        msg = fmt(tr("hint"), keyName(settings().hotkey).c_str());
+#ifdef _WIN32
+        if (gState.view == View::List && !ModRegistry::instance().leviLaminaLoaded()) msg = tr("leviLamina_missing");
+        else msg = fmt(tr("hint"), keyName(settings().hotkey).c_str());
+#else
+        msg = tr("hint.android");
+#endif
     }
     fonts::note(msg);
     dl->PushClipRect(min, {x, min.y + height}, true);
@@ -1283,11 +1324,22 @@ bool isOpen() { return gOpen; }
 // ---------------------------------------------------------------- Ui.h
 bool wantsFrame() { return gOpen || gPending; }
 
+#ifndef _WIN32
+namespace {
+float gPlatformScale = 0;
+}
+void setPlatformScale(float scale) { gPlatformScale = scale; }
+#endif
+
 bool prepareFrame(float width, float height) {
     applyRequests();
     icons::pump();
     // Design size is 1080p; follow the window and the user's scale.
-    float scale = std::clamp(height / 960.0f, 0.6f, 3.0f) * float(settings().uiScale.load());
+    float base = std::clamp(height / 960.0f, 0.6f, 3.0f);
+#ifndef _WIN32
+    if (gPlatformScale > 0) base = gPlatformScale;
+#endif
+    float scale = base * float(settings().uiScale.load());
     scale       = std::round(scale * 20.0f) / 20.0f;
     // While the mouse is held (e.g. dragging the UI scale slider) keep the old
     // scale: rescaling resizes the slider under the cursor, which feeds back
@@ -1305,9 +1357,11 @@ bool prepareFrame(float width, float height) {
 void drawFrame() {
     if (!gOpen) return;
     ImGuiIO& io = ImGui::GetIO();
+#ifdef _WIN32
     // Software cursor when the game has hidden the OS one (in-world).
     CURSORINFO ci{sizeof(ci)};
     io.MouseDrawCursor = GetCursorInfo(&ci) && !(ci.flags & CURSOR_SHOWING);
+#endif
 
     // Esc: leave the sub view, else close. Not while a text field or popup has focus.
     if (ImGui::IsKeyPressed(ImGuiKey_Escape, false) && ImGui::GetActiveID() == 0 && !io.WantTextInput
@@ -1374,6 +1428,7 @@ void drawFrame() {
 
 void onDeviceLost() { icons::clear(); }
 
+#ifdef _WIN32
 bool handleWindowMessage(UINT msg, WPARAM wParam, LPARAM lParam) {
     if (msg != WM_KEYDOWN && msg != WM_SYSKEYDOWN) return false;
     if (gCapturingHotkey) {
@@ -1391,6 +1446,8 @@ bool handleWindowMessage(UINT msg, WPARAM wParam, LPARAM lParam) {
     }
     return false;
 }
+
+#endif
 
 bool blocksGameInput() { return gOpen && settings().pauseInputWhileOpen; }
 

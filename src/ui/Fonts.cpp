@@ -3,13 +3,18 @@
 #include "core/I18n.h"
 #include "core/Log.h"
 
+#ifdef _WIN32
 #include <Windows.h>
+#endif
 
 #include <imgui.h>
 #include <imgui_internal.h>
 
 #include <cmath>
 #include <filesystem>
+#include <fstream>
+#include <map>
+#include <memory>
 #include <mutex>
 #include <set>
 #include <vector>
@@ -44,22 +49,11 @@ void addUtf8(std::string_view text, std::set<ImWchar>& into, bool& added) {
     }
 }
 
-// Frequently used Traditional Chinese: Big5 level 1 (5401 characters), via code page 950.
-void seedTraditional(std::set<ImWchar>& into) {
-    char buf[2];
-    for (int lead = 0xA4; lead <= 0xC6; ++lead) {
-        for (int trail : {0x40, 0xA1}) {
-            int last = trail == 0x40 ? 0x7E : 0xFE;
-            for (int t = trail; t <= last; ++t) {
-                if (lead == 0xC6 && t > 0x7E) break;
-                buf[0] = char(lead);
-                buf[1] = char(t);
-                wchar_t w = 0;
-                if (MultiByteToWideChar(950, MB_ERR_INVALID_CHARS, buf, 2, &w, 1) == 1 && w >= 0x4E00) into.insert(w);
-            }
-        }
-    }
-}
+// Frequently used Traditional Chinese: Big5 level 1 (5401 characters).
+constexpr ImWchar kCommonHanzi[] = {
+#include "ui/CommonHanzi.inc"
+};
+void seedTraditional(std::set<ImWchar>& into) { into.insert(std::begin(kCommonHanzi), std::end(kCommonHanzi)); }
 
 void seedBase() {
     for (ImWchar c = 0x20; c < 0x250; ++c) gKnown.insert(c), gShown.insert(c);
@@ -74,22 +68,56 @@ void seedBase() {
     for (auto const& s : allStrings()) addUtf8(s, gKnown, added), addUtf8(s, gShown, added);
 }
 
-std::filesystem::path fontFile(wchar_t const* name) {
+struct FontFace {
+    char const* file;  // Windows: name under %WINDIR%\Fonts; Android: absolute path
+    int         face;  // index inside a .ttc collection
+};
+
+std::filesystem::path fontFile(char const* name) {
+#ifdef _WIN32
     wchar_t dir[MAX_PATH]{};
     GetWindowsDirectoryW(dir, MAX_PATH);
     return std::filesystem::path(dir) / L"Fonts" / name;
+#else
+    return name;
+#endif
 }
 
-ImFont* addFont(ImFontAtlas* atlas, wchar_t const* const* candidates, float size, ImWchar const* ranges) {
-    for (auto const* const* c = candidates; *c; ++c) {
-        auto path = fontFile(*c);
-        std::error_code ec;
-        if (!std::filesystem::exists(path, ec)) continue;
+// Font files are read once and shared by every atlas rebuild (the atlas does not own them).
+std::vector<char> const* fontData(std::filesystem::path const& path) {
+    static std::map<std::filesystem::path, std::unique_ptr<std::vector<char>>> cache;
+    auto& slot = cache[path];
+    if (!slot) {
+        slot = std::make_unique<std::vector<char>>();
+        std::ifstream in(path, std::ios::binary);
+        if (in) slot->assign(std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>());
+    }
+    return slot->empty() ? nullptr : slot.get();
+}
+
+int faceCount(std::vector<char> const& d) {
+    if (d.size() < 12) return 0;
+    if (d[0] == 't' && d[1] == 't' && d[2] == 'c' && d[3] == 'f')
+        return int((uint8_t(d[8]) << 24) | (uint8_t(d[9]) << 16) | (uint8_t(d[10]) << 8) | uint8_t(d[11]));
+    return 1;
+}
+
+ImFont* addFont(ImFontAtlas* atlas, FontFace const* candidates, float size, ImWchar const* ranges, float weight) {
+    for (auto const* c = candidates; c->file; ++c) {
+        auto const* data = fontData(fontFile(c->file));
+        if (!data) continue;
+        int count = faceCount(*data);
+        if (count <= 0) continue;
         ImFontConfig cfg;
-        cfg.OversampleH = 1;
-        cfg.OversampleV = 1;
-        cfg.PixelSnapH  = true;
-        if (ImFont* f = atlas->AddFontFromFileTTF(path.string().c_str(), size, &cfg, ranges)) return f;
+        cfg.FontNo               = c->face < count ? c->face : 0;
+        cfg.OversampleH          = 1;
+        cfg.OversampleV          = 1;
+        cfg.PixelSnapH           = true;
+        cfg.RasterizerMultiply   = weight;
+        cfg.FontDataOwnedByAtlas = false;
+        if (ImFont* f = atlas->AddFontFromMemoryTTF(const_cast<char*>(data->data()), int(data->size()), size, &cfg,
+                                                    ranges))
+            return f;
     }
     return nullptr;
 }
@@ -140,11 +168,25 @@ bool update(float scale) {
 
     ImFontAtlas* atlas = ImGui::GetIO().Fonts;
     atlas->Clear();
-    static wchar_t const* const kRegular[] = {L"msjh.ttc", L"msyh.ttc", L"segoeui.ttf", nullptr};
-    static wchar_t const* const kBold[]    = {L"msjhbd.ttc", L"msyhbd.ttc", L"segoeuib.ttf", L"msjh.ttc", nullptr};
-    gBody  = addFont(atlas, kRegular, std::round(kBodySize * scale), sRanges.data());
-    gBold  = addFont(atlas, kBold, std::round(kBodySize * scale), sShown.data());
-    gTitle = addFont(atlas, kBold, std::round(kTitleSize * scale), sShown.data());
+#ifdef _WIN32
+    static FontFace const kRegular[] = {{"msjh.ttc", 0}, {"msyh.ttc", 0}, {"segoeui.ttf", 0}, {}};
+    static FontFace const kBold[]    = {{"msjhbd.ttc", 0}, {"msyhbd.ttc", 0}, {"segoeuib.ttf", 0}, {"msjh.ttc", 0}, {}};
+    constexpr float       kBoldWeight = 1.0f;
+#else
+    // Android ships one CJK weight; face 3 of NotoSansCJK is Traditional Chinese. "Bold" is drawn heavier.
+    static FontFace const kRegular[] = {{"/system/fonts/NotoSansCJK-Regular.ttc", 3},
+                                        {"/system/fonts/NotoSansTC-Regular.otf", 0},
+                                        {"/system/fonts/DroidSansFallbackFull.ttf", 0},
+                                        {"/system/fonts/DroidSansFallback.ttf", 0},
+                                        {}};
+    static FontFace const kBold[]    = {{"/system/fonts/NotoSansCJK-Bold.ttc", 3}, {"/system/fonts/NotoSansCJK-Regular.ttc", 3},
+                                        {"/system/fonts/NotoSansTC-Bold.otf", 0}, {"/system/fonts/NotoSansTC-Regular.otf", 0},
+                                        {"/system/fonts/DroidSansFallbackFull.ttf", 0}, {}};
+    constexpr float       kBoldWeight = 1.35f;
+#endif
+    gBody  = addFont(atlas, kRegular, std::round(kBodySize * scale), sRanges.data(), 1.0f);
+    gBold  = addFont(atlas, kBold, std::round(kBodySize * scale), sShown.data(), kBoldWeight);
+    gTitle = addFont(atlas, kBold, std::round(kTitleSize * scale), sShown.data(), kBoldWeight);
     if (!gBody) gBody = atlas->AddFontDefault();
     if (!gBold) gBold = gBody;
     if (!gTitle) gTitle = gBold;

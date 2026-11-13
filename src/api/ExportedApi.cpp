@@ -143,6 +143,6 @@ ModMenuApi const kApi = {
 
 } // namespace
 
-extern "C" __declspec(dllexport) ModMenuApi const* ModMenu_GetApi(uint32_t minVersion) {
+extern "C" MODMENU_EXPORT ModMenuApi const* ModMenu_GetApi(uint32_t minVersion) {
     return minVersion <= MODMENU_API_VERSION ? &kApi : nullptr;
 }

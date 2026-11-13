@@ -1,18 +1,22 @@
 // ModMenuBE's own settings screen, registered through the same API other mods use.
 #include "ui/SelfConfig.h"
 
+#ifdef _WIN32
 #include <Windows.h>
+#endif
 
 #include "core/ConfigRegistry.h"
 #include "core/I18n.h"
 #include "core/Settings.h"
 
+#include <algorithm>
 #include <cstring>
 
 namespace modmenu::ui {
 
 namespace {
 
+#ifdef _WIN32
 struct Key {
     int         vk;
     char const* name;
@@ -25,6 +29,7 @@ constexpr Key kKeys[] = {
     {VK_NEXT, "Page Down"}, {VK_PAUSE, "Pause"},    {VK_SCROLL, "Scroll Lock"}, {VK_OEM_3, "` (~)"},
 };
 constexpr int kKeyCount = int(sizeof(kKeys) / sizeof(kKeys[0]));
+#endif
 
 char const* const kLanguages[] = {"auto", "zh_TW", "en_US"};
 
@@ -46,6 +51,7 @@ void registerSelfConfig() {
     reg.beginScreen("ModMenuBE", tr("settings.title"));
     reg.addCategory("ModMenuBE", "general", tr("general"));
 
+#ifdef _WIN32 // Android opens the menu from a floating button (F8 on a hardware keyboard)
     {
         ConfigOption o;
         o.kind  = OptionKind::Enum;
@@ -63,6 +69,7 @@ void registerSelfConfig() {
         };
         reg.addOption("ModMenuBE", std::move(o));
     }
+#endif
     {
         ConfigOption o;
         o.kind    = OptionKind::Enum;
@@ -109,7 +116,10 @@ void registerSelfConfig() {
         o.maxBytes  = 128;
         o.getString = [](void*, char* out, uint32_t cap) {
             auto k = settings().curseforgeApiKey();
-            strncpy_s(out, cap, k.c_str(), _TRUNCATE);
+            if (cap == 0) return;
+            size_t n = std::min<size_t>(k.size(), cap - 1);
+            std::memcpy(out, k.data(), n);
+            out[n] = 0;
         };
         o.setString = [](void*, char const* v) { settings().setCurseforgeApiKey(v ? v : ""); };
         reg.addOption("ModMenuBE", std::move(o));
