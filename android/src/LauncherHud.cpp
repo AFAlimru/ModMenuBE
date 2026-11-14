@@ -4,6 +4,7 @@
 #include "platform/Jni.h"
 
 #include <atomic>
+#include <string>
 #include <mutex>
 
 namespace modmenu::android::launcher {
@@ -47,6 +48,28 @@ void setHudHidden(bool hidden) {
         }
     }
     if (auto ex = jni::takeException(e); !ex.empty()) log().warn("launcher HUD toggle failed: {}", ex);
+    e->PopLocalFrame(nullptr);
+}
+
+} // namespace modmenu::android::launcher
+
+namespace modmenu::android::launcher {
+
+void toast(std::string const& text) {
+    JNIEnv* e = jni::env();
+    if (!e) return;
+    e->PushLocalFrame(8);
+    jobject   context = jni::currentActivity(e);
+    jclass    cls     = e->FindClass("android/widget/Toast");
+    jmethodID make    = cls ? e->GetStaticMethodID(cls, "makeText",
+                                                   "(Landroid/content/Context;Ljava/lang/CharSequence;I)Landroid/widget/Toast;")
+                            : nullptr;
+    jmethodID show    = cls ? e->GetMethodID(cls, "show", "()V") : nullptr;
+    if (context && make && show) {
+        jobject t = e->CallStaticObjectMethod(cls, make, context, e->NewStringUTF(text.c_str()), jint(1));
+        if (t) e->CallVoidMethod(t, show);
+    }
+    if (auto ex = jni::takeException(e); !ex.empty()) log().warn("toast failed: {}", ex);
     e->PopLocalFrame(nullptr);
 }
 

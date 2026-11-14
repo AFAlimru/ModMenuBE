@@ -21,6 +21,7 @@
 #include <imgui_internal.h>
 
 #include <algorithm>
+#include <atomic>
 #include <cfloat>
 #include <chrono>
 #include <cmath>
@@ -31,8 +32,12 @@ namespace modmenu::android::overlay {
 
 namespace {
 
-using SwapFn = EGLBoolean (*)(EGLDisplay, EGLSurface);
-SwapFn gOriginal = nullptr;
+using SwapFn       = EGLBoolean (*)(EGLDisplay, EGLSurface);
+using SwapDamageFn = EGLBoolean (*)(EGLDisplay, EGLSurface, EGLint const*, EGLint);
+SwapFn       gOriginal       = nullptr;
+SwapDamageFn gOrigDamageKHR  = nullptr; // some drivers/games present with these instead of eglSwapBuffers
+SwapDamageFn gOrigDamageEXT  = nullptr;
+std::atomic<bool> gVulkan{false};
 
 EGLContext    gContext = EGL_NO_CONTEXT; // EGL context the ImGui GL objects belong to
 ImGuiContext* gImGui   = nullptr;
@@ -214,9 +219,39 @@ bool isGameFrame(EGLDisplay display, EGLSurface surface) {
     return true;
 }
 
-EGLBoolean swapDetour(EGLDisplay display, EGLSurface surface) {
+// Logs the first present of each thread (name, size, whether it counts as the game frame): what a tester's log
+// needs to show when the menu does not appear.
+void logPresenter(char const* api, EGLDisplay display, EGLSurface surface, bool accepted) {
+    thread_local bool logged = false;
+    static std::atomic<int> threads{0};
+    if (logged || threads.load() >= 12) return;
+    logged = true;
+    threads.fetch_add(1);
+    char name[17]{};
+    prctl(PR_GET_NAME, name, 0, 0, 0);
+    EGLint w = 0, h = 0;
+    if (display != EGL_NO_DISPLAY) {
+        eglQuerySurface(display, surface, EGL_WIDTH, &w);
+        eglQuerySurface(display, surface, EGL_HEIGHT, &h);
+    }
+    log().info("{} on thread '{}' ({}x{}){}", api, name, w, h, accepted ? ", used for the menu" : "");
+}
+
+// libEGL may implement one swap entry point with another: draw once per frame.
+thread_local bool tInsideSwap = false;
+struct SwapGuard {
+    bool outer;
+    SwapGuard() : outer(!tInsideSwap) { tInsideSwap = true; }
+    ~SwapGuard() {
+        if (outer) tInsideSwap = false;
+    }
+};
+
+void beforeSwap(char const* api, EGLDisplay display, EGLSurface surface) {
     auto& st = state();
-    if (st.active.load(std::memory_order_relaxed) && !gFailed && isGameFrame(display, surface)) {
+    bool  game = st.active.load(std::memory_order_relaxed) && !gFailed && isGameFrame(display, surface);
+    logPresenter(api, display, surface, game);
+    if (game) {
         if (st.menuOpen.load(std::memory_order_relaxed) || ui::wantsFrame()) {
             renderFrame(display, surface);
             st.lastFrameMs.store(nowMs());
@@ -228,10 +263,64 @@ EGLBoolean swapDetour(EGLDisplay display, EGLSurface surface) {
             pl::input::hideKeyboard();
         }
     }
+}
+
+EGLBoolean swapDetour(EGLDisplay display, EGLSurface surface) {
+    SwapGuard guard;
+    if (guard.outer) beforeSwap("eglSwapBuffers", display, surface);
     return gOriginal(display, surface);
 }
 
+EGLBoolean swapDamageKHRDetour(EGLDisplay display, EGLSurface surface, EGLint const* rects, EGLint n) {
+    SwapGuard guard;
+    if (guard.outer) beforeSwap("eglSwapBuffersWithDamageKHR", display, surface);
+    return gOrigDamageKHR(display, surface, rects, n);
+}
+
+EGLBoolean swapDamageEXTDetour(EGLDisplay display, EGLSurface surface, EGLint const* rects, EGLint n) {
+    SwapGuard guard;
+    if (guard.outer) beforeSwap("eglSwapBuffersWithDamageEXT", display, surface);
+    return gOrigDamageEXT(display, surface, rects, n);
+}
+
+// Vulkan is only watched, not drawn into: a game that presents with it gets a clear message instead of a menu
+// that silently never appears.
+using VkPresentFn   = int (*)(void* queue, void const* info);
+using VkDeviceProcFn = void* (*)(void* device, char const* name);
+VkPresentFn    gOrigVkPresent   = nullptr;
+VkDeviceProcFn gOrigVkDeviceProc = nullptr;
+
+void noteVulkan(char const* how) {
+    if (gVulkan.load(std::memory_order_relaxed)) return;
+    char name[17]{};
+    prctl(PR_GET_NAME, name, 0, 0, 0);
+    if (std::string_view(name) == "RenderThread") return; // Android's own UI renderer may use Vulkan
+    if (gVulkan.exchange(true)) return;
+    log().warn("the game renders with Vulkan ({}, thread '{}'); the menu can only draw over OpenGL ES", how, name);
+}
+
+int vkPresentDetour(void* queue, void const* info) {
+    noteVulkan("vkQueuePresentKHR");
+    return gOrigVkPresent(queue, info);
+}
+
+void* vkDeviceProcDetour(void* device, char const* name) {
+    if (name && std::string_view(name) == "vkQueuePresentKHR") noteVulkan("vkGetDeviceProcAddr");
+    return gOrigVkDeviceProc(device, name);
+}
+
+template <class Fn>
+bool hookSymbol(void* lib, char const* symbol, void* detour, Fn* original) {
+    void* target = lib ? dlsym(lib, symbol) : nullptr;
+    if (!target) return false;
+    int rc = pl::memory::hook(target, detour, reinterpret_cast<void**>(original));
+    log().info("{} hook: rc={}", symbol, rc);
+    return rc == 0 && *original;
+}
+
 } // namespace
+
+bool gameUsesVulkan() { return gVulkan.load(); }
 
 bool install() {
     static bool done = false;
@@ -240,11 +329,14 @@ bool install() {
     void* lib = dlopen("libEGL.so", RTLD_NOW | RTLD_NOLOAD);
     if (!lib) lib = dlopen("libEGL.so", RTLD_NOW);
     if (!lib) return false;
-    void* target = dlsym(lib, "eglSwapBuffers");
-    if (!target) return false;
-    int rc = pl::memory::hook(target, reinterpret_cast<void*>(&swapDetour), reinterpret_cast<void**>(&gOriginal));
-    log().info("eglSwapBuffers hook: rc={}", rc);
-    return rc == 0 && gOriginal != nullptr;
+    bool ok = hookSymbol(lib, "eglSwapBuffers", reinterpret_cast<void*>(&swapDetour), &gOriginal);
+    hookSymbol(lib, "eglSwapBuffersWithDamageKHR", reinterpret_cast<void*>(&swapDamageKHRDetour), &gOrigDamageKHR);
+    hookSymbol(lib, "eglSwapBuffersWithDamageEXT", reinterpret_cast<void*>(&swapDamageEXTDetour), &gOrigDamageEXT);
+    if (void* vk = dlopen("libvulkan.so", RTLD_NOW)) {
+        hookSymbol(vk, "vkQueuePresentKHR", reinterpret_cast<void*>(&vkPresentDetour), &gOrigVkPresent);
+        hookSymbol(vk, "vkGetDeviceProcAddr", reinterpret_cast<void*>(&vkDeviceProcDetour), &gOrigVkDeviceProc);
+    }
+    return ok;
 }
 
 } // namespace modmenu::android::overlay

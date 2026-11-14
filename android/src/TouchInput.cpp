@@ -1,4 +1,7 @@
 #include "TouchInput.h"
+#include "EglOverlay.h"
+#include "LauncherHud.h"
+#include "core/I18n.h"
 
 #include "core/Log.h"
 #include "ui/Fonts.h"
@@ -95,8 +98,11 @@ bool onTouch(pl::input::TouchEvent const& e) {
     // Never strand the player: if no game frame drew the menu since it opened (e.g. the game renders with
     // Vulkan, so there is no eglSwapBuffers to draw in), give the input back.
     if (open && st.lastFrameMs.load() < st.openedAtMs.load() && nowMs() - st.openedAtMs.load() > 1500) {
-        modmenu::log::error("menu was opened but never drawn (no OpenGL ES frame?); closing it");
+        bool vulkan = overlay::gameUsesVulkan();
+        modmenu::log::error("menu was opened but never drawn ({}); closing it",
+                            vulkan ? "the game renders with Vulkan" : "no OpenGL ES frame reached the menu");
         closeMenu();
+        launcher::toast(tr(vulkan ? "android.no_frame.vulkan" : "android.no_frame"));
         open = false;
     }
     ime::update(open);
