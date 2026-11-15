@@ -8,8 +8,10 @@
 #include "overlay/GameInputGuard.h"
 #include "overlay/Overlay.h"
 #include "ui/SelfConfig.h"
+#include "compat/NativeBridge.h"
 
 #include <Windows.h>
+#include <exception>
 
 namespace {
 
@@ -31,13 +33,13 @@ BOOL CALLBACK findWindow(HWND hwnd, LPARAM lp) {
     return TRUE;
 }
 
-DWORD WINAPI initThread(LPVOID) {
+DWORD initThreadImpl() {
     log::init();
     settings().load();
     reloadLanguage();
     ui::registerSelfConfig();
     ModRegistry::instance().rescan();
-    overlay::installGameInputGuard();
+    if(!compat::installNativeBridge())return 0;
     overlay::watchLeviLaminaCommands();
     log::info("ModMenuBE loaded from {} ({} mods found)", pathUtf8(paths::selfDir()),
               ModRegistry::instance().mods()->size());
@@ -53,9 +55,17 @@ DWORD WINAPI initThread(LPVOID) {
         return 0;
     }
     for (int attempt = 0; attempt < 5; ++attempt) {
+        log::info("Installing DXGI overlay (attempt {})",attempt+1);
         if (overlay::install()) return 0;
         Sleep(1000);
     }
+    return 0;
+}
+
+DWORD WINAPI initThread(LPVOID) {
+    try{return initThreadImpl();}
+    catch(std::exception const&e){log::error("Initialization refused: {}",e.what());}
+    catch(...){log::error("Initialization refused: unexpected failure");}
     return 0;
 }
 

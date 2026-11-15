@@ -1,0 +1,7 @@
+{
+  "name": "FastBlockBreak",
+  "entry": "FastBlockBreak.dll",
+  "version": "0.2.0-test3",
+  "type": "preload-native",
+  "author": "XuanDiNa"
+}

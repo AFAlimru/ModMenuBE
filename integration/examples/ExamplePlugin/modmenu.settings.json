@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "plugin": {"id": "ExamplePlugin", "entry": "ExamplePlugin.dll", "versions": ["1.0.0"]},
+  "config": {"file": "settings.json", "reload": "restart"},
+  "fields": [
+    {
+      "path": "/enabled", "type": "boolean", "default": true,
+      "label": {"en_US": "Enabled", "zh_TW": "啟用", "zh_CN": "启用"},
+      "description": {"en_US": "Enable the configured feature. This does not load or unload the DLL.", "zh_TW": "啟用設定的功能；不會載入或卸載 DLL。", "zh_CN": "启用配置的功能；不会加载或卸载 DLL。"}
+    },
+    {
+      "path": "/limit", "type": "integer", "default": 16, "min": 1, "max": 64, "step": 1,
+      "label": {"en_US": "Limit", "zh_TW": "數量上限", "zh_CN": "数量上限"},
+      "description": {"en_US": "An example bounded integer.", "zh_TW": "有範圍限制的整數範例。", "zh_CN": "有范围限制的整数示例。"}
+    },
+    {
+      "path": "/mode", "type": "choice", "default": 0,
+      "label": {"en_US": "Mode", "zh_TW": "模式", "zh_CN": "模式"},
+      "options": [
+        {"en_US": "First to last", "zh_TW": "從前到後", "zh_CN": "从前到后"},
+        {"en_US": "Last to first", "zh_TW": "從後到前", "zh_CN": "从后到前"}
+      ]
+    },
+    {
+      "path": "/actionKey", "type": "key", "default": "F6", "keys": ["NONE", "F6", "F7", "F8"],
+      "label": {"en_US": "Action key", "zh_TW": "操作按鍵", "zh_CN": "操作按键"}
+    }
+  ]
+}

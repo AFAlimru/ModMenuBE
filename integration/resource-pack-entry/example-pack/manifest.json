@@ -1,0 +1,17 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "ModMenu Entry API v1 Example",
+    "description": "Optional JSON UI buttons for ModMenuBedrock. Requires the native ModMenu plugin; enable globally.",
+    "uuid": "424a02d1-57e0-4b76-a38e-1d6f73f4fd23",
+    "version": [1, 0, 0],
+    "min_engine_version": [1, 26, 40]
+  },
+  "modules": [
+    {
+      "type": "resources",
+      "uuid": "16836962-f722-4dd3-a282-e28c704eb65c",
+      "version": [1, 0, 0]
+    }
+  ]
+}

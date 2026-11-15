@@ -20,11 +20,13 @@ void onDeviceLost();
 #ifdef _WIN32
 // Window thread. Returns true if the message was consumed (hotkey, key capture).
 bool handleWindowMessage(UINT msg, WPARAM wParam, LPARAM lParam);
+void notifyFocusLost();
 #else
 // Base UI scale (dp -> px) chosen by the platform; 0 = derive from the window height.
 void setPlatformScale(float scale);
 #endif
 // Whether keyboard/mouse input must be kept from the game right now.
 bool blocksGameInput();
+bool acceptsUiInput();
 
 } // namespace modmenu::ui
