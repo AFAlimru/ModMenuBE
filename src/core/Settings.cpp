@@ -1,4 +1,5 @@
 #include "core/Settings.h"
+#include "modmenu/ModMenuBinding.h"
 
 #include "core/Log.h"
 #include "core/Paths.h"
@@ -47,7 +48,10 @@ void Settings::load() {
         log::warn("config.json is not valid JSON, using defaults");
         return;
     }
-    hotkey             = j.value("hotkey", hotkey.load());
+    if(auto it=j.find("hotkey");it!=j.end()) {
+        if(it->is_number_integer()){auto key=it->get<int>();if(key==0||binding::Allowed(key))hotkey=key;}
+        else if(it->is_string())if(auto b=binding::ParseInput(it->get<std::string>())){hotkey=int(b->key);hotkeyModifiers=b->modifiers;}
+    }
     showLibraries      = j.value("showLibraries", showLibraries.load());
     sortMode           = j.value("sortMode", sortMode.load());
     checkUpdatesOnOpen = j.value("checkUpdatesOnOpen", checkUpdatesOnOpen.load());
@@ -61,7 +65,7 @@ void Settings::load() {
 
 void Settings::save() const {
     nlohmann::ordered_json j;
-    j["hotkey"]                  = hotkey.load();
+    j["hotkey"]                  = binding::Token({unsigned(hotkey.load()),hotkeyModifiers.load()});
     j["language"]                = language();
     j["showLibraries"]           = showLibraries.load();
     j["sortMode"]                = sortMode.load();

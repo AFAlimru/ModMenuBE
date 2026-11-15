@@ -1,3 +1,13 @@
+> **Integration review candidate 0.2.0-local3 (2026-11-16)**
+>
+> This proposal combines ModMenuBE c80be25 with passive settings and reviewed native entry evidence from ModMenuBedrock 10f80f2. It is a test build for upstream review, not an upstream release. The default shortcut is **F10**, on the native main/pause menu only. Our former Workspace is excluded. See [local design](docs/local-integration-design.md), [testing](docs/TESTING-LOCAL.md), and [plugin migration plan](docs/plugin-migration-plan.md). No other plugin is modified or bundled. Minecraft acceptance of this integration remains pending; existing ModMenuBedrock settings are not migrated automatically.
+>
+> 提供上游審查的整合測試版，預設 F10，僅原生主選單／暫停選單可開啟。未包含舊 Workspace，尚未合併或成為上游正式發佈。遊戲內驗收仍待完成，舊 ModMenuBedrock 設定不會自動遷移。以下保留上游 README，原有 F8 等說明請以本地測試文件為準。
+>
+> local2 fixes the startup ordinal-101 dependency failure when an instance contains a different `d3d12.dll`. It resolves `D3D12CreateDevice` by name from the absolute Windows system path. See [dependency evidence](docs/LOADER-DEPENDENCY.md). Minecraft gameplay acceptance is pending.
+>
+> local3 separates passive-settings actions from footer hints, bounds long explanations before Cancel, and translates the Apply/discard labels. It retains the local2 loader fix and does not change other plugins or migrate Workspace.
+
 # ModMenuBE
 
 [繁體中文](#繁體中文) · [English](#english)

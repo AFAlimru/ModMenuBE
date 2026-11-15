@@ -57,7 +57,8 @@ int wmain(int argc, wchar_t** argv) {
     ShowWindow(hwnd, SW_SHOW);
 
     // Load the mod first, like a preload-native mod: before the device exists.
-    if (!LoadLibraryW(argv[1])) {
+    HMODULE menuModule=LoadLibraryW(argv[1]);
+    if (!menuModule) {
         std::fwprintf(stderr, L"LoadLibrary failed: %lu\n", GetLastError());
         return 1;
     }
@@ -115,9 +116,9 @@ int wmain(int argc, wchar_t** argv) {
         ULONGLONG elapsed = GetTickCount64() - start;
         if (open && !opened && elapsed > 1500) {
             if (selectMod.empty()) {
-                PostMessageW(hwnd, WM_KEYDOWN, VK_F8, 0x00420001);
+                PostMessageW(hwnd, WM_KEYDOWN, VK_F10, 0x00440001);
             } else if (auto get = reinterpret_cast<ModMenu_GetApiFn>(
-                           GetProcAddress(GetModuleHandleW(L"ModMenuBE.dll"), "ModMenu_GetApi"))) {
+                           GetProcAddress(menuModule, "ModMenu_GetApi"))) {
                 if (ModMenuApi const* api = get(MODMENU_API_VERSION)) api->openMenu(selectMod.c_str(), openConfig);
             }
             opened = true;

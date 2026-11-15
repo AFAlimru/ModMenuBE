@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0-local3] - 2026-11-16 (local only)
+
+### Fixed
+
+- Passive settings: Apply and the discard explanation no longer share the same drawing area with the menu hotkey/status hint. Reserve a separate lower line, a consistent action height and the Cancel button's horizontal space.
+- Use the active menu language for Apply, Cancel and the discard explanation. Long explanations are clipped to their own region.
+
+This is a footer-only candidate based on local2. Existing settings transactions, provider APIs, native guards and the D3D12 loader fix are retained. No automatic installation or upstream submission.
+
+## [0.2.0-local2] - 2026-11-16 (local only)
+
+### Fixed
+
+- Removed the eager SDK ordinal-101 import of `D3D12CreateDevice`, which prevented local1 from loading with the app-local `d3d12.dll` found in the test instance. The overlay now resolves the function by name from the absolute Windows system directory. No game DLL is replaced and no loader-anchor export is added.
+- Added a binary dependency audit and standalone system-runtime resolution tests, including an already-mapped app-local shadow DLL. TestHost rendering alone did not cover this failure.
+
+### Scope
+
+- Retains the local1 passive settings/native entry integration, exact native guards and unchanged upstream C API. Workspace and other plugin updates remain excluded. Not published or submitted upstream; Minecraft testing is pending.
+
 ## [0.2.0] - 2026-11-13
 
 ### Added

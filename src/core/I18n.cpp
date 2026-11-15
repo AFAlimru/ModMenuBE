@@ -1,6 +1,7 @@
 #include "core/I18n.h"
 
 #include "core/Settings.h"
+#include "compat/NativeBridge.h"
 
 #ifdef _WIN32
 #include <Windows.h>
@@ -9,8 +10,8 @@
 #endif
 
 #ifdef _WIN32
-#define MODMENU_AUTO_LANG_EN "Follow Windows"
-#define MODMENU_AUTO_LANG_ZH "跟隨 Windows"
+#define MODMENU_AUTO_LANG_EN "Follow game"
+#define MODMENU_AUTO_LANG_ZH "跟隨遊戲"
 #define MODMENU_DISABLED_EN  "Disabled (manifest.json.close)"
 #define MODMENU_DISABLED_ZH  "已停用（manifest.json.close）"
 #else
@@ -66,6 +67,8 @@ Table const kEnUs = {
     {"revert", "Revert"},
     {"done", "Done"},
     {"cancel", "Cancel"},
+    {"passive.apply", "Apply"},
+    {"passive.discard_hint", "Back / Cancel discards unsaved edits"},
     {"got_it", "Got it"},
     {"commands", "Commands"},
     {"commands.tip", "Closes ModMenuBE and types this into the chat. Works in a world."},
@@ -140,6 +143,8 @@ Table const kEnUs = {
 };
 
 Table const kZhTw = {
+    {"passive.apply", "套用"},
+    {"passive.discard_hint", "返回或取消會捨棄未儲存的修改"},
     {"title", "模組"},
     {"count", "%d 個模組，%d 個已載入"},
     {"search", "搜尋模組…"},
@@ -257,8 +262,7 @@ void reloadLanguage() {
     std::string lang = settings().language();
     if (lang == "auto" || lang.empty()) {
 #ifdef _WIN32
-        LANGID id = GetUserDefaultUILanguage();
-        lang      = PRIMARYLANGID(id) == LANG_CHINESE ? "zh_TW" : "en_US";
+        lang = compat::gameLanguage();
 #else
         char value[PROP_VALUE_MAX]{};
         if (__system_property_get("persist.sys.locale", value) <= 0) __system_property_get("ro.product.locale", value);

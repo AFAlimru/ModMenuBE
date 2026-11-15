@@ -3,3 +3,6 @@ build/
 bin/
 vsxmake*/
 *.user
+artifacts/
+releases/
+__pycache__/
