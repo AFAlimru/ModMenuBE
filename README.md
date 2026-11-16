@@ -1,8 +1,8 @@
 > **Local workspace candidate 0.2.0-local4 (2026-11-16)**
 >
-> local4 adds optional `modmenu.json` workspace entries, embedded OreTheme pages and explicit external-UI handoffs through the versioned `ModMenu_GetWorkspaceApi` table. The [workspace guide](integration/WORKSPACES.md) and [test steps](docs/TESTING-WORKSPACE.md) describe the new contract. The old Workspace DLL ABI is not impersonated; existing providers need adaptation. This local feature branch is not included in upstream PR #2 and has not been installed or published.
+> local4 adds optional `modmenu.json` workspace entries, embedded OreTheme pages and explicit external-UI handoffs through the versioned `ModMenu_GetWorkspaceApi` table. The [workspace guide](integration/WORKSPACES.md) and [test steps](docs/TESTING-WORKSPACE.md) describe the new contract. The old Workspace DLL ABI is not impersonated; existing providers need adaptation. The user reported successful local testing on 2026-11-16 and authorized this separate review submission. It is not included in upstream PR #2 or an upstream release; see [verification scope](docs/VERIFICATION-LOCAL.md).
 >
-> local4 新增選用工作頁：未宣告便不顯示入口，內嵌頁與外部介面按鈕並存。沿用 ModMenuBE UI，一般 Configure 保持獨立。本地測試版尚未提交上游或安裝，舊提供者需適配新接口。以下 local3 說明及原上游文件保留作歷史背景，以工作頁指南為準。
+> local4 新增選用工作頁：未宣告便不顯示入口，內嵌頁與外部介面按鈕並存。沿用 ModMenuBE UI，一般 Configure 保持獨立。使用者於 2026-11-16 回報本地測試正常並授權獨立送審；尚非上游正式版，也不代表四版本均已實機驗收。舊提供者需適配新接口。以下 local3 說明及原上游文件保留作歷史背景，以工作頁指南為準。
 >
 > This proposal combines ModMenuBE c80be25 with passive settings and reviewed native entry evidence from ModMenuBedrock 10f80f2. It is a test build for upstream review, not an upstream release. The default shortcut is **F10**, on the native main/pause menu only. Our former Workspace is excluded. See [local design](docs/local-integration-design.md), [testing](docs/TESTING-LOCAL.md), and [plugin migration plan](docs/plugin-migration-plan.md). No other plugin is modified or bundled. Minecraft acceptance of this integration remains pending; existing ModMenuBedrock settings are not migrated automatically.
 >

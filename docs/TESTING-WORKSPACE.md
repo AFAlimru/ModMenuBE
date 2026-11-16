@@ -1,6 +1,6 @@
 # ModMenuBE local4 工作頁測試
 
-這是獨立本地 Windows x64 候選版，未更新 PR #2，尚未遊戲內驗收。保留 local3 回退包。四個既有精確映像的離線檢查不等於四版本實機驗收。
+這是獨立 Windows x64 候選版，未更新 PR #2。使用者於 2026-11-16 回報交付版測試正常，並授權獨立送審；未逐項指定測試版本及情境。保留 local3 回退包。以下步驟供重現及補齊驗收，四個既有精確映像的離線檢查不等於四版本實機驗收。
 
 1. 完全退出 Minecraft，備份目前 `mods/ModMenuBE`。更新 runtime ZIP 內的 `mods/ModMenuBE`，保留自己的設定。不要同時載入舊 ModMenuBedrock／LL 或重複 ModMenuBE。
 2. 此輪先不加入尚未適配的 BedrockTool。現有共用 Hook 限制沿用 local3，26.60 新 MouseTweaks 仍需獨立配對適配，未因工作頁而放寬。

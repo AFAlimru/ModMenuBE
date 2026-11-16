@@ -1,6 +1,8 @@
 # Verification status: 0.2.0-local4
 
-Local opt-in workspace candidate on reviewed base `5781ba0`. No installation, game launch, provider update or remote publication occurred. Frozen local3 and PR #2 remain unchanged.
+Local opt-in workspace candidate on reviewed base `5781ba0`. The build/verification process did not install plugins, launch Minecraft or update providers. Frozen local3 and PR #2 remain unchanged; the workspace extension is submitted separately for upstream review.
+
+On 2026-11-16 (Asia/Shanghai), the user reported that the delivered local4 test had no problems and authorized submission. The delivered DLL is 2,220,032 bytes, SHA-256 `FABE82C70C6831B0D7A4708ECF7A3885370D22BA862B17E60E2FF2295AFB9148`. This is user-reported acceptance of the delivered candidate; the tested game version and individual scenarios were not specified. It does not establish four-version gameplay or Android/provider compatibility.
 
 - Debug and Release: 14 executable suites passed, plus the static loader dependency audit. The new suites cover entry opt-in, the actual strict protocol/broker, external handoff/session/timeouts, real Win32 module/manifest/descriptor ownership, view state, and the actual ImGui workspace renderer/input.
 - NativeTests: 145 checks passed in each configuration against original and launcher forms of 1.26.45.01, 1.26.51.01, 1.26.52.03 and 1.26.60.05. App-local D3D12 shadow checks pass. These are offline copy-on-write checks, not Minecraft acceptance. NativeBridge/profile/guard sources are byte-equivalent to the reviewed base after newline normalization.
@@ -9,7 +11,7 @@ Local opt-in workspace candidate on reviewed base `5781ba0`. No installation, ga
 - The separate example DLL builds in both modes. Its worker and two own-window external targets are for manual acceptance; no example window has been opened in this verification. It performs no login, network or player-file operations. Acknowledgement is not task completion.
 - Packaging validates fresh verification DLL hashes/byte sizes, PE exports/dependencies, source provenance, JSON, runtime allowlists and ZIP roundtrips/CRC. Main runtime and optional example are separate. SDK source includes schemas and reproducible offscreen tests.
 
-Pending manual acceptance: all workspace controls/IME/clipboard, page and focus restoration, external own-window return/X/F10 behavior, main/pause navigation, Configure coexistence and resource-pack entry in Minecraft. Existing legacy Workspace providers need their own query/identity adaptation and testing; no BedrockTool DLL was changed or included.
+Remaining coverage is tracked separately from that report: per-version and per-scenario evidence for IME/clipboard, page/focus restoration, external own-window return/X/F10, main/pause navigation, Configure coexistence and resource-pack entry has not been itemized. Existing legacy Workspace providers need their own query/identity adaptation and testing; no BedrockTool DLL was changed or included.
 
 Build environment: process-local `_CL_=/Z7` avoids the shared MSVC PDB RPC issue and is restored after verification. No shared developer process was stopped.
 

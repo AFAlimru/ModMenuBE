@@ -16,7 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Independent workspace API v1 with copy-buffer registration, immutable state publication, polling, explicit external UI acknowledgements and return. No work runs on render callbacks; page closure does not stop jobs.
 - Optional no-network/no-file demo provider with two pages and two external interface buttons, regression suites and versioned SDK/author documentation.
 
-This local branch preserves upstream settings API v1/v2, native hooks and frozen local3. It is separate from PR #2; existing legacy providers require adapter review and Minecraft acceptance is pending.
+This branch preserves upstream settings API v1/v2, native hooks and frozen local3. It is separate from PR #2. The user reported successful local4 testing on 2026-11-16 and authorized submission; version-specific coverage was not itemized. Existing legacy providers still require adapter review and their own acceptance.
 
 ## [0.2.0-local3] - 2026-11-16 (local only)
 
