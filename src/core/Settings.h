@@ -10,7 +10,8 @@ enum class SortMode : int { NameAsc = 0, NameDesc = 1, LoadedFirst = 2 };
 
 // ModMenuBE's own settings, stored in mods/ModMenuBE/config/config.json.
 struct Settings {
-    std::atomic<int>    hotkey{0x77}; // VK_F8
+    std::atomic<int>    hotkey{0x79}; // VK_F10 (local integration)
+    std::atomic<unsigned> hotkeyModifiers{0};
     std::atomic<bool>   showLibraries{false};
     std::atomic<int>    sortMode{int(SortMode::NameAsc)};
     std::atomic<bool>   checkUpdatesOnOpen{true};

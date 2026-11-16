@@ -1,0 +1,40 @@
+# 其他模組更新計畫（2026-11-16）
+
+本輪只修改 `ModMenuBE-local`。所有插件 DLL、已安裝設定及正式套件保持原狀；未向上游提交或發布。BedrockTool 的具體改造由使用者在該專案的分支對話處理，本文件只記錄交接邊界。
+
+## 共用方向
+
+由 ModMenuBE 提供唯一的模組清單、設定頁與輸入／繪製外殼。一般設定先沿用 `modmenu.settings.json` v1–v5：開頁取得草稿，Cancel 丟棄，Apply 驗證原始檔及描述檔後原子儲存。插件仍負責自己的設定熱載入與實際功能。UI 顯示已儲存不代表插件已回報套用成功。
+
+Ctrl／Shift／左 Alt 組合沿用公用 binding contract 2；只有宣告 `binding` 的欄位可以寫入組合。舊 `key` 欄位仍受插件宣告的鍵名限制，不能只改描述檔就假設插件支援組合鍵。Esc 在捕捉期間清除綁定；滑鼠鍵不作為綁定主鍵。
+
+上游 C API v1／v2 保持不變。已有獨立介面的插件可用 `setExternalScreen` 或原有明確開啟動作，點擊後回到插件自己的介面；這不是嵌入式工作頁。local4 新增選用內嵌工作頁及 external 目標，詳見 `integration/WORKSPACES.md`；登入、網路及任務仍由插件 worker 執行。
+
+## 已核對的本地來源
+
+下表版本取自本地來源／安裝描述檔，並非對所有已發布二進位檔的相容保證。八個現有 sidecar 已通過本版的實際解析器檢查。源檔摘要見 `plugin-source-inventory.json`，本輪未讀登入憑證或玩家設定內容。
+
+| 模組／來源版本 | 現有設定能力 | 後續處理與驗收 |
+|---|---|---|
+| AutoClick 0.1.2-test15-bindings | v5，11 欄，開關／整數／選項／文字／組合鍵 | 先測 Apply 後功能熱載入；保留原有背景重載。無須因設定頁合併立即改 DLL。 |
+| AutoJumpReset 2.0.0-test20-leftalt | v5，9 欄，含 binding 與受限 key | binding 可保留；舊 key 列出可接受按鍵，避免暗中擴充觸發邏輯。 |
+| ContainerPreview 0.1.1-test5-compat | v5，2 欄，開關／組合鍵 | 驗證 Alt 組合、空綁定及預覽行為；不改預覽渲染。 |
+| FakeSneak 0.2.0-test1 | v5，3 欄，開關／組合鍵 | 驗證 Apply、Cancel、邊緣停止與失焦後不誤觸。 |
+| FullBright 0.1.0-test3-leftalt | v5，3 欄 | 驗證熱載入及原有版本保護；保留已驗收 DLL。 |
+| ToggleSprint 0.1.0-test7-leftalt | v5，2 欄，組合鍵／選項 | 驗證組合鍵及衝刺狀態，不改原生輸入。 |
+| LeftHandView 0.1.0-test19 | v1，1 開關 | 直接沿用描述檔；驗證切換效果即可。 |
+| SodiumExtraBedrock 0.11.1-diag1 | v2，47 欄，開關／選項／小數 Slider | 保留精確刻度及既有預設；此版本是來源快照，不能代替使用者安裝的 0.11.0-test1 之功能驗收。 |
+| AutoRestock 0.3.2 | 內建相容轉接，2 欄 | 先保留舊轉接；後續在該專案增加版本化 sidecar，逐項比對預設與補貨行為，再移除內建特例。 |
+| MouseTweaks 0.3.2-test1／0.3.3-test1-vanilla51 | 內建設定轉接；共用 Down／Up 掛鉤 | **優先驗收。** 本版只允許已核實的兩種 DLL 雜湊與 Ready 狀態。現有 26.45／26.52 安裝是前者，26.51 是後者。 |
+| MouseTweaks 0.4.0-test1-mc26.60 來源 | 新的二進位檔 | 尚未納入本版共用掛鉤清單；啟用此檔會被拒絕，不可刪除或放寬保護繞過。後續需精確檔案與掛鉤所有權審查及成對測試。26.60 首測先不載入它。 |
+| BedrockToolNative 0.2.0-test6 | v3 被動設定；舊 Workspace V1／精確 ModMenuBedrock 身分依賴 | **本輪排除。** 本版無舊 Workspace 4 個匯出，也不偽裝舊 DLL 身分。由該分支選擇適配 local4 公用工作頁 API 或保留自有介面，重新審核依賴並逐項驗收。 |
+
+## 建議順序
+
+1. 先在遊戲驗收本地 ModMenuBE：主／暫停入口、F10、返回、失焦、設定交易、材質包事件。
+2. 再成對驗收已核實 MouseTweaks，確認啟動及背包拖曳不受影響。26.60 的新 MouseTweaks 另作明確適配，不與本次離線成功混為一談。
+3. 逐一加入現有 sidecar 插件，以一個開關或鍵位修改證明熱載入與 Cancel。只有有實際不相容證據才修改插件，不全體重編。
+4. 在對應專案把 AutoRestock／MouseTweaks 內建設定遷至公開描述檔。這是後續工作，不在本包放其他插件的描述檔或 DLL。
+5. BedrockTool 由另一分支處理。需要操作頁的插件可按 local4 公用規格選擇內嵌頁或 external 目標；先用獨立示範驗證，再在各插件專案適配。普通設定插件無須更新。
+
+每個插件只在自身支援的精確遊戲版本測試；本 ModMenu 的四個映像通過不會擴大其他插件的遊戲版本範圍。完成本地人工驗收後，才決定上游提交內容。

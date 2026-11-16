@@ -1,0 +1,14 @@
+{
+  "apiVersion": 1,
+  "minimumModMenuVersion": "0.6.0-test7-resourcepack",
+  "event": "button.modmenu.open",
+  "legacyEvent": "button.mmb_open_mods",
+  "ownershipControl": "mmb_resource_pack_entry_v1",
+  "uiTechnology": "bedrock-json-ui",
+  "allowedScenes": ["start_screen", "pause_screen"],
+  "template": "modmenu_entry_v1.button",
+  "templateFile": "ui/modmenu_entry_v1.json",
+  "renderOwner": "resource-pack",
+  "openOwner": "ModMenuBedrock",
+  "availabilityBinding": null
+}

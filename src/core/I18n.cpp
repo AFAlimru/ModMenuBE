@@ -1,6 +1,7 @@
 #include "core/I18n.h"
 
 #include "core/Settings.h"
+#include "compat/NativeBridge.h"
 
 #ifdef _WIN32
 #include <Windows.h>
@@ -9,8 +10,8 @@
 #endif
 
 #ifdef _WIN32
-#define MODMENU_AUTO_LANG_EN "Follow Windows"
-#define MODMENU_AUTO_LANG_ZH "跟隨 Windows"
+#define MODMENU_AUTO_LANG_EN "Follow game"
+#define MODMENU_AUTO_LANG_ZH "跟隨遊戲"
 #define MODMENU_DISABLED_EN  "Disabled (manifest.json.close)"
 #define MODMENU_DISABLED_ZH  "已停用（manifest.json.close）"
 #else
@@ -31,6 +32,20 @@ namespace {
 using Table = std::map<std::string_view, char const*>;
 
 Table const kEnUs = {
+    {"workspace.title", "Workspace"},
+    {"workspace.intro", "Choose a page or open a plugin interface. Tasks continue when this page closes."},
+    {"workspace.unavailable", "Workspace provider is not ready. Reopen after the plugin has registered."},
+    {"workspace.target_unavailable", "This target has not registered compatible content yet."},
+    {"workspace.external_hint", "Opens the plugin's own interface. Use its Return button to come back."},
+    {"workspace.page_hint", "Opens a page inside ModMenuBE."},
+    {"workspace.busy", "Another UI handoff is pending."},
+    {"workspace.handoff", "Release all keys and mouse buttons to open the external interface."},
+    {"workspace.returned", "Returned from the plugin interface."},
+    {"workspace.submitted", "Request submitted; waiting for the plugin's result."},
+    {"workspace.waiting", "Waiting for the plugin..."},
+    {"workspace.invalid_text", "Text does not meet this field's limits."},
+    {"workspace.empty", "No entries."},
+    {"workspace.confirm", "Confirm"},
     {"title", "Mods"},
     {"count", "%d mods, %d loaded"},
     {"search", "Search mods..."},
@@ -66,6 +81,8 @@ Table const kEnUs = {
     {"revert", "Revert"},
     {"done", "Done"},
     {"cancel", "Cancel"},
+    {"passive.apply", "Apply"},
+    {"passive.discard_hint", "Back / Cancel discards unsaved edits"},
     {"got_it", "Got it"},
     {"commands", "Commands"},
     {"commands.tip", "Closes ModMenuBE and types this into the chat. Works in a world."},
@@ -140,6 +157,22 @@ Table const kEnUs = {
 };
 
 Table const kZhTw = {
+    {"workspace.title", "工作頁"},
+    {"workspace.intro", "選擇分頁或開啟插件介面。關閉本頁不會停止背景任務。"},
+    {"workspace.unavailable", "工作頁提供者尚未就緒，請待插件註冊後重開。"},
+    {"workspace.target_unavailable", "此目標尚未註冊相容內容。"},
+    {"workspace.external_hint", "開啟插件自己的介面；可用其返回按鈕回到這裡。"},
+    {"workspace.page_hint", "在 ModMenuBE 內開啟分頁。"},
+    {"workspace.busy", "另一個介面交接仍在等待。"},
+    {"workspace.handoff", "放開所有按鍵及滑鼠按鈕後開啟外部介面。"},
+    {"workspace.returned", "已從插件介面返回。"},
+    {"workspace.submitted", "請求已送出，等待插件回報結果。"},
+    {"workspace.waiting", "等待插件處理…"},
+    {"workspace.invalid_text", "文字不符合此欄位限制。"},
+    {"workspace.empty", "沒有項目。"},
+    {"workspace.confirm", "確認"},
+    {"passive.apply", "套用"},
+    {"passive.discard_hint", "返回或取消會捨棄未儲存的修改"},
     {"title", "模組"},
     {"count", "%d 個模組，%d 個已載入"},
     {"search", "搜尋模組…"},
@@ -257,8 +290,7 @@ void reloadLanguage() {
     std::string lang = settings().language();
     if (lang == "auto" || lang.empty()) {
 #ifdef _WIN32
-        LANGID id = GetUserDefaultUILanguage();
-        lang      = PRIMARYLANGID(id) == LANG_CHINESE ? "zh_TW" : "en_US";
+        lang = compat::gameLanguage();
 #else
         char value[PROP_VALUE_MAX]{};
         if (__system_property_get("persist.sys.locale", value) <= 0) __system_property_get("ro.product.locale", value);

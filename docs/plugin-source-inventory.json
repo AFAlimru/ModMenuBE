@@ -1,0 +1,57 @@
+[
+  {
+    "project": "AutoClick",
+    "file": "src/AutoClick.cpp",
+    "sha256": "59982b988bdd5ff19660002c037d209d4e50242df54ca7c488cefdf2d92369b0"
+  },
+  {
+    "project": "AutoJumpReset/v2",
+    "file": "src/Plugin.cpp",
+    "sha256": "1aee15308b454b5685326db9fb58489c7d90d8226fecb5efd1234221715fa12b"
+  },
+  {
+    "project": "AutoRestock-public",
+    "file": "src/Plugin.cpp",
+    "sha256": "86dffe11f1f24b94feacec3b94f323790d94c2492189a3d1823ffce410cb2e09"
+  },
+  {
+    "project": "ContainerPreview-public",
+    "file": "src/Plugin.cpp",
+    "sha256": "6116c35ca40ce59265faa02ed373092d42d92015731c6aa78d1b009cecf78cc7"
+  },
+  {
+    "project": "FakeSneak-private",
+    "file": "src/Plugin.cpp",
+    "sha256": "9b612f880b075dfb4271ff1c7932e56ac42289d7661dd2917ac1fbff2ff7c417"
+  },
+  {
+    "project": "fullbright/v26.52",
+    "file": "src/Plugin.cpp",
+    "sha256": "3b8e0be7c82a3641b3b0038a2598cdf0d0518f6abcfc0c3ec25afb660ef97b81"
+  },
+  {
+    "project": "MouseTweaksBedrock-public",
+    "file": "src/NativeVersionProfile.cpp",
+    "sha256": "36e2bbba434aa28a6f4ce74eb7324f3b8cb65e7b47a563a6f3f5b36126c45d6b"
+  },
+  {
+    "project": "SodiumExtraBedrock",
+    "file": "src/Plugin.cpp",
+    "sha256": "f370e0b11dd5d066a412f3317eac3b94f5cfa6192d0f7953788e2a7ee4ec7134"
+  },
+  {
+    "project": "ToggleSprint",
+    "file": "src/NativeInput.cpp",
+    "sha256": "3d9413b1050811221c378fde89bc14e8b0fc4b9313c2d7bbcdb018c180051fcb"
+  },
+  {
+    "project": "LeftHandView",
+    "file": "src/Plugin.cpp",
+    "sha256": "6eaa9b1e519440b42041602ec0c0e6a028c12525cf0bf2a255cfa84ed9c1cfd9"
+  },
+  {
+    "project": "BedrockTool-Rework/native/inprocess",
+    "file": "src/MenuAdmission.cpp",
+    "sha256": "e3c5296cd4657ab56ef5990239872e8c6fd086a10c6128a7241d5615012f4bf8"
+  }
+]

@@ -1,0 +1,548 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ModMenuBedrock settings description v5",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "plugin",
+    "config",
+    "fields"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512
+    },
+    "schemaVersion": {
+      "const": 5
+    },
+    "plugin": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "entry",
+        "versions"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{1,120}$"
+        },
+        "entry": {
+          "type": "string",
+          "minLength": 5,
+          "maxLength": 120,
+          "pattern": "^[A-Za-z0-9_-][A-Za-z0-9_.-]*\\.dll$"
+        },
+        "versions": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "pattern": "^[^*]+$"
+          }
+        }
+      }
+    },
+    "config": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "file",
+        "reload"
+      ],
+      "properties": {
+        "file": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 120,
+          "pattern": "^[A-Za-z0-9_-][A-Za-z0-9_.-]*\\.json$"
+        },
+        "reload": {
+          "enum": [
+            "hot",
+            "restart"
+          ]
+        }
+      }
+    },
+    "fields": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 64,
+      "items": {
+        "$ref": "#/$defs/field"
+      }
+    }
+  },
+  "$defs": {
+    "line": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160,
+      "pattern": "^[^\\u0000-\\u001F\\u007F\u6402]+$"
+    },
+    "text": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/line"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "en_US"
+          ],
+          "properties": {
+            "en_US": {
+              "$ref": "#/$defs/line"
+            },
+            "zh_TW": {
+              "$ref": "#/$defs/line"
+            },
+            "zh_CN": {
+              "$ref": "#/$defs/line"
+            }
+          }
+        }
+      ]
+    },
+    "paragraph": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024,
+      "pattern": "^[^\\u0000-\\u0009\\u000B\\u000C\\u000E-\\u001F\\u007F\u6402]+$"
+    },
+    "help": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/paragraph"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "en_US"
+          ],
+          "properties": {
+            "en_US": {
+              "$ref": "#/$defs/paragraph"
+            },
+            "zh_TW": {
+              "$ref": "#/$defs/paragraph"
+            },
+            "zh_CN": {
+              "$ref": "#/$defs/paragraph"
+            }
+          }
+        }
+      ]
+    },
+    "key": {
+      "type": "string",
+      "pattern": "^(NONE|INSERT|DELETE|HOME|END|PAGEUP|PAGEDOWN|PAUSE|LALT|RALT|LCTRL|RCTRL|LSHIFT|RSHIFT|SPACE|F([1-9]|1[0-9]|2[0-4])|[A-Z0-9])$"
+    },
+    "fixed": {
+      "type": "number",
+      "minimum": -2147483648,
+      "maximum": 2147483647
+    },
+    "field": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "type",
+        "default",
+        "label"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 256,
+          "pattern": "^/"
+        },
+        "type": {
+          "enum": [
+            "boolean",
+            "integer",
+            "choice",
+            "key",
+            "slider",
+            "text",
+            "binding"
+          ]
+        },
+        "default": {},
+        "label": {
+          "$ref": "#/$defs/text"
+        },
+        "category": {
+          "$ref": "#/$defs/text"
+        },
+        "description": {
+          "$ref": "#/$defs/help"
+        },
+        "min": {
+          "$ref": "#/$defs/fixed"
+        },
+        "max": {
+          "$ref": "#/$defs/fixed"
+        },
+        "step": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 2147483647
+        },
+        "unit": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 16
+        },
+        "options": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 6,
+          "items": {
+            "$ref": "#/$defs/text"
+          }
+        },
+        "keys": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 96,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/key"
+          }
+        },
+        "numberType": {
+          "enum": [
+            "integer",
+            "decimal"
+          ]
+        },
+        "precision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 6
+        },
+        "minBytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4096
+        },
+        "maxBytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4096
+        },
+        "validation": {
+          "enum": [
+            "none",
+            "identifier"
+          ]
+        },
+        "legacyNumericStrings": {
+          "type": "boolean"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "boolean"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "default": {
+                "type": "boolean"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "integer"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "min",
+              "max"
+            ],
+            "properties": {
+              "default": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 2147483647
+              },
+              "min": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "max": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "step": {
+                "type": "integer",
+                "minimum": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "enum": [
+                  "integer",
+                  "slider"
+                ]
+              }
+            }
+          },
+          "else": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "min"
+                  ]
+                },
+                {
+                  "required": [
+                    "max"
+                  ]
+                },
+                {
+                  "required": [
+                    "step"
+                  ]
+                },
+                {
+                  "required": [
+                    "unit"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "choice"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "options"
+            ],
+            "properties": {
+              "default": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 5
+              }
+            }
+          },
+          "else": {
+            "not": {
+              "required": [
+                "options"
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "key"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "keys"
+            ],
+            "properties": {
+              "default": {
+                "$ref": "#/$defs/key"
+              }
+            }
+          },
+          "else": {
+            "not": {
+              "required": [
+                "keys"
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "slider"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "numberType",
+              "min",
+              "max",
+              "step"
+            ],
+            "properties": {
+              "default": {
+                "$ref": "#/$defs/fixed"
+              }
+            },
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "numberType": {
+                      "const": "decimal"
+                    }
+                  }
+                },
+                "then": {
+                  "required": [
+                    "precision"
+                  ]
+                },
+                "else": {
+                  "not": {
+                    "required": [
+                      "precision"
+                    ]
+                  },
+                  "properties": {
+                    "min": {
+                      "type": "integer"
+                    },
+                    "max": {
+                      "type": "integer"
+                    },
+                    "step": {
+                      "type": "integer"
+                    },
+                    "default": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          "else": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "numberType"
+                  ]
+                },
+                {
+                  "required": [
+                    "precision"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "text"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "minBytes",
+              "maxBytes"
+            ],
+            "properties": {
+              "default": {
+                "type": "string"
+              }
+            }
+          },
+          "else": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "minBytes"
+                  ]
+                },
+                {
+                  "required": [
+                    "maxBytes"
+                  ]
+                },
+                {
+                  "required": [
+                    "validation"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "binding"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "default": {
+                "$ref": "#/$defs/binding"
+              }
+            }
+          },
+          "else": {
+            "not": {
+              "required": [
+                "legacyNumericStrings"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "binding": {
+      "type": "string",
+      "maxLength": 48,
+      "pattern": "^(?:NONE|BACKSPACE|TAB|CLEAR|ENTER|SHIFT|CTRL|ALT|PAUSE|CAPSLOCK|KANA|IME_ON|JUNJA|FINAL|HANJA|IME_OFF|CONVERT|NONCONVERT|ACCEPT|MODECHANGE|SPACE|PAGEUP|PAGEDOWN|END|HOME|LEFT|UP|RIGHT|DOWN|SELECT|PRINT|EXECUTE|PRINTSCREEN|INSERT|DELETE|HELP|0|1|2|3|4|5|6|7|8|9|A|B|C|D|E|F|G|H|I|J|K|L|M|N|O|P|Q|R|S|T|U|V|W|X|Y|Z|LWIN|RWIN|APPS|SLEEP|NUMPAD0|NUMPAD1|NUMPAD2|NUMPAD3|NUMPAD4|NUMPAD5|NUMPAD6|NUMPAD7|NUMPAD8|NUMPAD9|MULTIPLY|ADD|SEPARATOR|SUBTRACT|DECIMAL|DIVIDE|F1|F2|F3|F4|F5|F6|F7|F8|F9|F10|F11|F12|F13|F14|F15|F16|F17|F18|F19|F20|F21|F22|F23|F24|NUMLOCK|SCROLLLOCK|VK_92|VK_93|VK_94|VK_95|VK_96|LSHIFT|RSHIFT|LCTRL|RCTRL|LALT|RALT|BROWSER_BACK|BROWSER_FORWARD|BROWSER_REFRESH|BROWSER_STOP|BROWSER_SEARCH|BROWSER_FAVORITES|BROWSER_HOME|VOLUME_MUTE|VOLUME_DOWN|VOLUME_UP|MEDIA_NEXT|MEDIA_PREVIOUS|MEDIA_STOP|MEDIA_PLAY_PAUSE|LAUNCH_MAIL|LAUNCH_MEDIA|LAUNCH_APP1|LAUNCH_APP2|OEM_1|OEM_PLUS|OEM_COMMA|OEM_MINUS|OEM_PERIOD|OEM_2|OEM_3|ABNT_C1|ABNT_C2|OEM_4|OEM_5|OEM_6|OEM_7|OEM_8|OEM_AX|OEM_102|ICO_HELP|ICO_00|PROCESSKEY|ICO_CLEAR|PACKET|VK_E9|VK_EA|VK_EB|VK_EC|VK_ED|VK_EE|VK_EF|VK_F0|VK_F1|VK_F2|VK_F3|VK_F4|VK_F5|ATTN|CRSEL|EXSEL|EREOF|PLAY|ZOOM|NONAME|PA1|OEM_CLEAR|(?:CTRL\\+|SHIFT\\+|CTRL\\+SHIFT\\+)(?:BACKSPACE|TAB|CLEAR|ENTER|ALT|PAUSE|CAPSLOCK|KANA|IME_ON|JUNJA|FINAL|HANJA|IME_OFF|CONVERT|NONCONVERT|ACCEPT|MODECHANGE|SPACE|PAGEUP|PAGEDOWN|END|HOME|LEFT|UP|RIGHT|DOWN|SELECT|PRINT|EXECUTE|PRINTSCREEN|INSERT|DELETE|HELP|0|1|2|3|4|5|6|7|8|9|A|B|C|D|E|F|G|H|I|J|K|L|M|N|O|P|Q|R|S|T|U|V|W|X|Y|Z|LWIN|RWIN|APPS|SLEEP|NUMPAD0|NUMPAD1|NUMPAD2|NUMPAD3|NUMPAD4|NUMPAD5|NUMPAD6|NUMPAD7|NUMPAD8|NUMPAD9|MULTIPLY|ADD|SEPARATOR|SUBTRACT|DECIMAL|DIVIDE|F1|F2|F3|F4|F5|F6|F7|F8|F9|F10|F11|F12|F13|F14|F15|F16|F17|F18|F19|F20|F21|F22|F23|F24|NUMLOCK|SCROLLLOCK|VK_92|VK_93|VK_94|VK_95|VK_96|LALT|RALT|BROWSER_BACK|BROWSER_FORWARD|BROWSER_REFRESH|BROWSER_STOP|BROWSER_SEARCH|BROWSER_FAVORITES|BROWSER_HOME|VOLUME_MUTE|VOLUME_DOWN|VOLUME_UP|MEDIA_NEXT|MEDIA_PREVIOUS|MEDIA_STOP|MEDIA_PLAY_PAUSE|LAUNCH_MAIL|LAUNCH_MEDIA|LAUNCH_APP1|LAUNCH_APP2|OEM_1|OEM_PLUS|OEM_COMMA|OEM_MINUS|OEM_PERIOD|OEM_2|OEM_3|ABNT_C1|ABNT_C2|OEM_4|OEM_5|OEM_6|OEM_7|OEM_8|OEM_AX|OEM_102|ICO_HELP|ICO_00|PROCESSKEY|ICO_CLEAR|PACKET|VK_E9|VK_EA|VK_EB|VK_EC|VK_ED|VK_EE|VK_EF|VK_F0|VK_F1|VK_F2|VK_F3|VK_F4|VK_F5|ATTN|CRSEL|EXSEL|EREOF|PLAY|ZOOM|NONAME|PA1|OEM_CLEAR)|(?:LALT\\+|CTRL\\+LALT\\+|SHIFT\\+LALT\\+|CTRL\\+SHIFT\\+LALT\\+)(?:BACKSPACE|TAB|CLEAR|ENTER|PAUSE|CAPSLOCK|KANA|IME_ON|JUNJA|FINAL|HANJA|IME_OFF|CONVERT|NONCONVERT|ACCEPT|MODECHANGE|SPACE|PAGEUP|PAGEDOWN|END|HOME|LEFT|UP|RIGHT|DOWN|SELECT|PRINT|EXECUTE|PRINTSCREEN|INSERT|DELETE|HELP|0|1|2|3|4|5|6|7|8|9|A|B|C|D|E|F|G|H|I|J|K|L|M|N|O|P|Q|R|S|T|U|V|W|X|Y|Z|LWIN|RWIN|APPS|SLEEP|NUMPAD0|NUMPAD1|NUMPAD2|NUMPAD3|NUMPAD4|NUMPAD5|NUMPAD6|NUMPAD7|NUMPAD8|NUMPAD9|MULTIPLY|ADD|SEPARATOR|SUBTRACT|DECIMAL|DIVIDE|F1|F2|F3|F4|F5|F6|F7|F8|F9|F10|F11|F12|F13|F14|F15|F16|F17|F18|F19|F20|F21|F22|F23|F24|NUMLOCK|SCROLLLOCK|VK_92|VK_93|VK_94|VK_95|VK_96|RALT|BROWSER_BACK|BROWSER_FORWARD|BROWSER_REFRESH|BROWSER_STOP|BROWSER_SEARCH|BROWSER_FAVORITES|BROWSER_HOME|VOLUME_MUTE|VOLUME_DOWN|VOLUME_UP|MEDIA_NEXT|MEDIA_PREVIOUS|MEDIA_STOP|MEDIA_PLAY_PAUSE|LAUNCH_MAIL|LAUNCH_MEDIA|LAUNCH_APP1|LAUNCH_APP2|OEM_1|OEM_PLUS|OEM_COMMA|OEM_MINUS|OEM_PERIOD|OEM_2|OEM_3|ABNT_C1|ABNT_C2|OEM_4|OEM_5|OEM_6|OEM_7|OEM_8|OEM_AX|OEM_102|ICO_HELP|ICO_00|PROCESSKEY|ICO_CLEAR|PACKET|VK_E9|VK_EA|VK_EB|VK_EC|VK_ED|VK_EE|VK_EF|VK_F0|VK_F1|VK_F2|VK_F3|VK_F4|VK_F5|ATTN|CRSEL|EXSEL|EREOF|PLAY|ZOOM|NONAME|PA1|OEM_CLEAR))$"
+    }
+  }
+}

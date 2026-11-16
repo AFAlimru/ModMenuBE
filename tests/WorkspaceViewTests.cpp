@@ -1,0 +1,5 @@
+#include "workspace/ViewModel.h"
+#include <iostream>
+int main(){using namespace modmenu::workspace;int errors=0;auto check=[&](bool ok,char const*t){if(!ok){++errors;std::cerr<<"FAIL "<<t<<'\n';}};
+ ViewModel view;view.open("Example",11);check(view.page.empty()&&view.session==11,"starts at entry hub");view.page="jobs";view.scroll["jobs"]=44;view.text["name"]="Committed";view.committed["name"]="Committed";view.text["name"]="Unfinished";view.editing="name";view.confirmAction="start";view.suspend();check(view.text["name"]=="Committed"&&view.confirmAction.empty(),"blur reverts only unfinished edit and confirmation");check(view.page=="jobs"&&view.scroll["jobs"]==44,"blur preserves page and scroll");check(view.back()&&view.page.empty(),"back from page returns hub");check(!view.back(),"back from hub leaves workspace");view.page="jobs";check(!view.observe(12),"changed session invalidates old page");check(view.page.empty()&&view.text.empty(),"session clears draft");view.open("Example",12);check(view.observe(12),"same session retained");
+ std::cout<<"workspace view failures="<<errors<<'\n';return errors?1:0;}

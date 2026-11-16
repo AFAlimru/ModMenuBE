@@ -1,0 +1,1 @@
+{"name": "ExamplePlugin", "entry": "ExamplePlugin.dll", "version": "1.0.0", "type": "preload-native"}

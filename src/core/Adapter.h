@@ -1,6 +1,7 @@
 #pragma once
 
 #include <nlohmann/json.hpp>
+#include "workspace/Entry.h"
 
 #include <filesystem>
 #include <map>
@@ -74,6 +75,7 @@ struct Adapter {
     std::filesystem::path    source;
     bool                     configDisabled = false; // "config": false
     AdapterOpen              open;
+    workspace::EntryDefinition workspace;
     std::vector<AdapterCommand> commands;
     std::vector<AdapterFile> files;
     nlohmann::json           metadata;  // same keys as the manifest's "modmenu" block
