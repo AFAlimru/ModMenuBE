@@ -1,7 +1,7 @@
 {
     "name": "ModMenuBE",
     "entry": "ModMenuBE.dll",
-    "version": "0.2.0-local3",
+    "version": "0.2.0-local4",
     "type": "preload-native",
     "author": "AFAlimru",
     "description": "ModMenuBE local integration: F10 opens Mods from the native main or pause menu; compatible passive settings and resource-pack entry.",

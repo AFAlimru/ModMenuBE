@@ -9,7 +9,7 @@ try {
     if($LASTEXITCODE -ne 0){throw 'Build failed'}
     $evidence=Join-Path $root 'artifacts\verification'
     New-Item -ItemType Directory -Path $evidence -Force | Out-Null
-    foreach($test in @('DefinitionTests','NativeTests','Native51VariantsTests','ExternalSettingsTests','SettingsTransactionTests','TextEditorTests','LocalIntegrationTests','D3D12RuntimeTests')){
+    foreach($test in @('DefinitionTests','NativeTests','Native51VariantsTests','ExternalSettingsTests','SettingsTransactionTests','TextEditorTests','LocalIntegrationTests','D3D12RuntimeTests','WorkspaceEntryTests','WorkspaceProtocolTests','WorkspaceHandoffTests','WorkspaceApiTests','WorkspaceViewTests','WorkspaceUiTests')){
         $result=& (Join-Path $root "build\windows\x64\$Mode\$test.exe") 2>&1
         $code=$LASTEXITCODE
         $result | Tee-Object -LiteralPath (Join-Path $evidence "$Mode-$test.txt")
@@ -39,7 +39,7 @@ try {
         mode=$Mode
         dll_sha256=(Get-FileHash -LiteralPath $dll.FullName -Algorithm SHA256).Hash
         dll_bytes=$dll.Length
-        executable_suites=8
+        executable_suites=14
         dependency_audit='passed'
         private_images=[bool]$ImagesRoot
     } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $evidence "$Mode-summary.json") -Encoding utf8

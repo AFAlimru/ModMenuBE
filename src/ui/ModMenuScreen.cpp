@@ -27,6 +27,7 @@
 #include "ui/SafeCall.h"
 #include "ui/SelfConfig.h"
 #include "ui/LegacySettings.h"
+#include "ui/WorkspaceView.h"
 #include "compat/NativeBridge.h"
 #include "compat/ReleaseGate.h"
 #include "modmenu/ModMenuBinding.h"
@@ -62,7 +63,7 @@ std::atomic<bool> gPending{false};
 std::atomic<bool> gTextInput{false};
 
 // ---------------------------------------------------------------- screen state (render thread)
-enum class View { List, Config, Json, Legacy };
+enum class View { List, Config, Json, Legacy, Workspace };
 compat::Admission gAdmission;
 std::atomic<bool> gInputActive{false};
 std::atomic<bool> gFocusLost{false};
@@ -612,6 +613,13 @@ void drawDetails(ModInfo const& mod) {
         else toggleEnabled(mod);
     }
     if (mod.self) ore::tooltip(tr("self_disable"));
+    if(workspaces::available(mod)) {
+        ImGui::Dummy({0,s(6)});
+        auto label=mod.adapter->workspace.label.get(activeLanguage());fonts::note(label);
+        if(ore::button("##workspace",label.c_str(),ore::Variant::Primary)) {
+            if(workspaces::open(mod)){gState.view=View::Workspace;gState.configMod=mod.name;}
+        }
+    }
 #ifdef _WIN32
     ImGui::SameLine();
     if (ore::button("##folder", tr("open_folder"), ore::Variant::Dark)) openFolder(mod.folder);
@@ -888,6 +896,7 @@ bool drawOption(Column const& c, ConfigOption const& o) {
 }
 
 void finishConfig() {
+    if(gState.view==View::Workspace){if(workspaces::back())return;workspaces::close();}
     if(gState.view==View::Legacy)legacy::close();
     if (gState.view == View::Config) {
         if (auto screen = ConfigRegistry::instance().get(gState.configMod)) {
@@ -1161,6 +1170,10 @@ void applyRequests() {
     }
     bool wasOpen = gOpen;
     bool open    = wasOpen;
+    if(workspaces::externalActive()&&(r.open||r.toggle)) {
+        workspaces::close();gState.view=View::List;gReleaseGate.suspend();
+        r.toggle=false;r.open=true;
+    }
     if (r.toggle) open = !open;
     if (r.open) open = true;
     if (r.close) open = false;
@@ -1185,7 +1198,8 @@ void applyRequests() {
         }
     }
     if (!open && wasOpen) {
-        if (gState.view != View::List) finishConfig();
+        if(gState.view==View::Workspace){workspaces::close();gState.view=View::List;}
+        else if (gState.view != View::List) finishConfig();
         legacy::suspend();gTextInput=false;
     }
     gOpen = open;
@@ -1311,6 +1325,8 @@ void drawFooter(ImVec2 min, float width, float height) {
         ImGui::SetCursorScreenPos({min.x+s(4),by});
         legacy::footer(std::max(0.f,x-min.x-s(4)));
         if(cancel)finishConfig();
+    } else if(gState.view==View::Workspace) {
+        if(placeRight("##workspace-back",tr("back"),ore::Variant::Dark,false))finishConfig();
     } else if (gState.view == View::Config) {
         if (placeRight("##done", tr("done"), ore::Variant::Primary, false)) finishConfig();
     } else if (gState.view == View::Json && !gState.docs.empty()) {
@@ -1413,7 +1429,7 @@ void requestRescan() {
     gRequests.rescan = true;
     gPending         = true;
 }
-bool isOpen() { return gOpen; }
+bool isOpen() { return gOpen&&!workspaces::externalActive(); }
 
 // ---------------------------------------------------------------- Ui.h
 bool wantsFrame() { return gOpen || gPending; }
@@ -1437,6 +1453,7 @@ bool prepareFrame(float width, float height) {
     if(focusLost || (!admitted && gInputActive.load())) {
         gInputActive=false;gReleaseGate.suspend();
         legacy::suspend();gTextInput=false;
+        workspaces::suspend();
         ImGui::GetIO().ClearInputKeys();ImGui::GetIO().ClearInputMouse();ImGui::ClearActiveID();
         ImGui::ClosePopupsExceptModals();
     }
@@ -1448,6 +1465,13 @@ bool prepareFrame(float width, float height) {
     if(!gOpen)gAdmission.close();
     if(admitted){binding::Snapshot keys{};for(unsigned k=1;k<256;++k)keys[k]=(GetAsyncKeyState(int(k))&0x8000)!=0;admitted=gReleaseGate.allow(keys);}
     gInputActive=gOpen&&admitted;
+    if(gState.view==View::Workspace) {
+        bool released=true;for(unsigned k=1;k<256;++k)released&=(GetAsyncKeyState(int(k))&0x8000)==0;
+        bool suspended=workspaces::inputSuspended();
+        if(!workspaces::tick(gOpen&&gAdmission.retained(),observation.foreground,released))requestClose("workspace origin/session changed");
+        if(workspaces::inputSuspended())gInputActive=false;
+        else if(suspended){gReleaseGate.suspend();gInputActive=false;}
+    }
     if(gOpen&&gAdmission.retained()){gOriginIdentity=observation.identity;gOriginScene=observation.scene;}else {gOriginIdentity=0;gOriginScene=0;}
     if(!gHotkeyArmed&&observation.foreground){bool held=false;for(unsigned k=8;k<256;++k)held|=(GetAsyncKeyState(int(k))&0x8000)!=0;if(!held)gHotkeyArmed=true;}
     icons::pump();
@@ -1520,7 +1544,7 @@ void drawFrame() {
         auto screen = ConfigRegistry::instance().get(gState.configMod);
         titleText   = screen && !screen->title.empty() ? screen->title
                                                        : gState.configMod + " · "
-                                                             + (gState.view == View::Json ? tr("json_editor") : tr("config"));
+                                                             + (gState.view == View::Json ? tr("json_editor") : gState.view==View::Workspace ? tr("workspace.title") : tr("config"));
     }
     drawHeader(min, width, headerH, titleText.c_str(), gState.view != View::List, subtitle.c_str());
 
@@ -1533,6 +1557,7 @@ void drawFrame() {
         ImGui::BeginChild("sub", {bodyMax.x - bodyMin.x, bodyMax.y - bodyMin.y});
         float h = bodyMax.y - bodyMin.y;
         if (gState.view == View::Legacy) legacy::draw(h);
+        else if(gState.view==View::Workspace)workspaces::draw(h);
         else if (gState.view == View::Config) drawConfigBody(h);
         else drawJsonBody(h);
         ImGui::EndChild();
@@ -1545,15 +1570,16 @@ void drawFrame() {
     gTextInput=io.WantTextInput;
 }
 
-void onDeviceLost() { icons::clear(); }
+void onDeviceLost() { icons::clear();workspaces::releaseResources(); }
 
 #ifdef _WIN32
 void notifyFocusLost(){gFocusLost=true;gInputActive=false;gHotkeyArmed=false;}
 bool handleWindowMessage(UINT msg, WPARAM wParam, LPARAM lParam) {
+    if(workspaces::inputSuspended()&&!workspaces::externalActive())return false;
     if(legacy::capturing())return false;
     auto observation=compat::nativeObservation();
     if(!observation.eligible||!observation.foreground)return false;
-    if(gOpen&&!gInputActive)return false;
+    if(gOpen&&!gInputActive&&!workspaces::externalActive())return false;
     if(gOpen&&gTextInput)return false;
     if(!gHotkeyArmed){bool held=false;for(unsigned k=8;k<256;++k)held|=(GetAsyncKeyState(int(k))&0x8000)!=0;if(!held)gHotkeyArmed=true;else return false;}
     if (msg != WM_KEYDOWN && msg != WM_SYSKEYDOWN) return false;
@@ -1563,13 +1589,13 @@ bool handleWindowMessage(UINT msg, WPARAM wParam, LPARAM lParam) {
     unsigned key=unsigned(wParam);if(key==VK_SHIFT)key=MapVirtualKeyW((unsigned(lParam)>>16)&255,MAPVK_VSC_TO_VK_EX);
     if(key==VK_CONTROL)key=(lParam&(1<<24))?VK_RCONTROL:VK_LCONTROL;
     if(key==VK_MENU)key=(lParam&(1<<24))?VK_RMENU:VK_LMENU;
-    if(b.key==key||b.key==unsigned(wParam)){snapshot[b.key]=true;if(binding::Matches(b,snapshot)){if(!repeat)requestToggle("keyboard chord");return true;}}
+    if(b.key==key||b.key==unsigned(wParam)){snapshot[b.key]=true;if(binding::Matches(b,snapshot)){if(!repeat){if(workspaces::externalActive())requestOpen();else requestToggle("keyboard chord");}return true;}}
     return false;
 }
 
 #endif
 
-bool blocksGameInput() { if(!gOpen)return false;auto o=compat::nativeObservation();return o.eligible&&o.foreground&&o.identity==gOriginIdentity&&o.scene==gOriginScene; }
+bool blocksGameInput() { if(!gOpen||workspaces::externalActive())return false;auto o=compat::nativeObservation();return o.eligible&&o.foreground&&o.identity==gOriginIdentity&&o.scene==gOriginScene; }
 bool acceptsUiInput(){return gInputActive&&blocksGameInput();}
 
 } // namespace modmenu::ui

@@ -1,0 +1,30 @@
+{
+  "repository": "XuanDiNa/ModMenuBedrock",
+  "commit": "10f80f266523d3196e1af1f212375abadfa7c9a1",
+  "license": "MIT",
+  "files": [
+    {
+      "source": "editions/vanilla/include/ModMenu/Workspace.h",
+      "local": "src/compat/ModMenu/Workspace.h",
+      "original_sha256": "a1572792f6e51b1150431edb1158b61e06e9a5f8cce6efda304deb774e852233",
+      "current_sha256": "7E56FFBAFF21EDEA17011A148F179A934F2506DCC074668054882EE938CF9DE7"
+    },
+    {
+      "source": "editions/vanilla/src/Workspace.cpp",
+      "local": "src/workspace/Protocol.cpp",
+      "original_sha256": "3d79389d0c443505c03ec534a49cdbe319d39688f92b43bee106ce7db853f8c2",
+      "current_sha256": "3D79389D0C443505C03EC534A49CDBE319D39688F92B43BEE106CE7DB853F8C2"
+    },
+    {
+      "source": "editions/vanilla/tests/WorkspaceTests.cpp",
+      "local": "tests/WorkspaceProtocolTests.cpp",
+      "original_sha256": "f6ba2a203598b10792c7d61e522b5cf51e464f52551089036aa782c7e5e46ba6",
+      "current_sha256": "F6BA2A203598B10792C7D61E522B5CF51E464F52551089036AA782C7E5E46BA6"
+    }
+  ],
+  "modifications": [
+    "Workspace.h: append externalTargets logical IDs to the internal definition.",
+    "Protocol.cpp: byte-identical parser/broker reuse; no renderer, pointer bridge or game hooks imported.",
+    "WorkspaceProtocolTests.cpp: original protocol regression fixtures retained."
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "config": false,
+  "workspace": {
+    "version": 1,
+    "label": { "en_US": "Workspace", "zh_TW": "工作頁", "zh_CN": "工作页" },
+    "entries": [
+      { "id": "tasks", "type": "page", "target": "jobs", "label": { "en_US": "Tasks", "zh_TW": "任務", "zh_CN": "任务" } },
+      { "id": "preview", "type": "page", "target": "map", "label": { "en_US": "Preview", "zh_TW": "預覽", "zh_CN": "预览" } },
+      { "id": "editor", "type": "external", "target": "editor_ui", "label": { "en_US": "Open editor", "zh_TW": "開啟編輯器", "zh_CN": "打开编辑器" } },
+      { "id": "viewer", "type": "external", "target": "viewer_ui", "label": { "en_US": "Open viewer", "zh_TW": "開啟檢視器", "zh_CN": "打开查看器" } }
+    ]
+  }
+}

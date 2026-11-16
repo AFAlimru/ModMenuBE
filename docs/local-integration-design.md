@@ -1,3 +1,5 @@
+> Historical local1–local3 scope. local4 adds the separately approved optional workspace extension; see `superpowers/specs/2026-11-16-workspace-extension-design.md` and `../integration/WORKSPACES.md`. Native hooks remain unchanged.
+
 # Local integration without Workspace
 
 User scope confirmed 2026-11-16: integrate locally, exclude our Workspace implementation, plan other plugin migrations, do not submit upstream. No game installation or provider modification is authorized by this build task.

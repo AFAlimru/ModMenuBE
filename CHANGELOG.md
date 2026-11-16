@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0-local4] - 2026-11-16 (local workspace candidate)
+
+### Added
+
+- Optional `modmenu.json` workspace declaration. Absent/false hides the entry; valid declarations expose a launcher with named embedded pages and external UI targets. Unavailable targets are disabled without affecting Configure.
+- OreTheme workspace presentation for bounded text, booleans, explicit actions/confirmation, status, progress, stable-ID lists and RGBA8 pixel previews. Valid page/form/scroll state survives temporary focus loss.
+- Independent workspace API v1 with copy-buffer registration, immutable state publication, polling, explicit external UI acknowledgements and return. No work runs on render callbacks; page closure does not stop jobs.
+- Optional no-network/no-file demo provider with two pages and two external interface buttons, regression suites and versioned SDK/author documentation.
+
+This local branch preserves upstream settings API v1/v2, native hooks and frozen local3. It is separate from PR #2; existing legacy providers require adapter review and Minecraft acceptance is pending.
+
 ## [0.2.0-local3] - 2026-11-16 (local only)
 
 ### Fixed

@@ -8,7 +8,7 @@
 
 Ctrl／Shift／左 Alt 組合沿用公用 binding contract 2；只有宣告 `binding` 的欄位可以寫入組合。舊 `key` 欄位仍受插件宣告的鍵名限制，不能只改描述檔就假設插件支援組合鍵。Esc 在捕捉期間清除綁定；滑鼠鍵不作為綁定主鍵。
 
-上游 C API v1／v2 保持不變。已有獨立介面的插件可用 `setExternalScreen` 或原有明確開啟動作，點擊後回到插件自己的介面；這不是嵌入式工作頁。地圖、登入、任務等複雜工具未在此版重建。
+上游 C API v1／v2 保持不變。已有獨立介面的插件可用 `setExternalScreen` 或原有明確開啟動作，點擊後回到插件自己的介面；這不是嵌入式工作頁。local4 新增選用內嵌工作頁及 external 目標，詳見 `integration/WORKSPACES.md`；登入、網路及任務仍由插件 worker 執行。
 
 ## 已核對的本地來源
 
@@ -27,7 +27,7 @@ Ctrl／Shift／左 Alt 組合沿用公用 binding contract 2；只有宣告 `bin
 | AutoRestock 0.3.2 | 內建相容轉接，2 欄 | 先保留舊轉接；後續在該專案增加版本化 sidecar，逐項比對預設與補貨行為，再移除內建特例。 |
 | MouseTweaks 0.3.2-test1／0.3.3-test1-vanilla51 | 內建設定轉接；共用 Down／Up 掛鉤 | **優先驗收。** 本版只允許已核實的兩種 DLL 雜湊與 Ready 狀態。現有 26.45／26.52 安裝是前者，26.51 是後者。 |
 | MouseTweaks 0.4.0-test1-mc26.60 來源 | 新的二進位檔 | 尚未納入本版共用掛鉤清單；啟用此檔會被拒絕，不可刪除或放寬保護繞過。後續需精確檔案與掛鉤所有權審查及成對測試。26.60 首測先不載入它。 |
-| BedrockToolNative 0.2.0-test6 | v3 被動設定；舊 Workspace V1／精確 ModMenuBedrock 身分依賴 | **本輪排除。** 本版無舊 Workspace 4 個匯出，也不偽裝舊 DLL 身分。後續由該分支選擇插件獨立介面／上游外部介面入口，再設計非繪製執行緒的工作與狀態通道。 |
+| BedrockToolNative 0.2.0-test6 | v3 被動設定；舊 Workspace V1／精確 ModMenuBedrock 身分依賴 | **本輪排除。** 本版無舊 Workspace 4 個匯出，也不偽裝舊 DLL 身分。由該分支選擇適配 local4 公用工作頁 API 或保留自有介面，重新審核依賴並逐項驗收。 |
 
 ## 建議順序
 
@@ -35,6 +35,6 @@ Ctrl／Shift／左 Alt 組合沿用公用 binding contract 2；只有宣告 `bin
 2. 再成對驗收已核實 MouseTweaks，確認啟動及背包拖曳不受影響。26.60 的新 MouseTweaks 另作明確適配，不與本次離線成功混為一談。
 3. 逐一加入現有 sidecar 插件，以一個開關或鍵位修改證明熱載入與 Cancel。只有有實際不相容證據才修改插件，不全體重編。
 4. 在對應專案把 AutoRestock／MouseTweaks 內建設定遷至公開描述檔。這是後續工作，不在本包放其他插件的描述檔或 DLL。
-5. BedrockTool 由另一分支處理。其他需獨立操作介面的插件先用上游外部入口；未經新規格，不增加工作頁框架。
+5. BedrockTool 由另一分支處理。需要操作頁的插件可按 local4 公用規格選擇內嵌頁或 external 目標；先用獨立示範驗證，再在各插件專案適配。普通設定插件無須更新。
 
 每個插件只在自身支援的精確遊戲版本測試；本 ModMenu 的四個映像通過不會擴大其他插件的遊戲版本範圍。完成本地人工驗收後，才決定上游提交內容。
