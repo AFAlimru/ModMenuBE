@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-11-22
+
+### Fixed
+
+- Windows: clicks in the menu work again when another mod's overlay (seen with arke) takes the game window's mouse button messages; the menu reads the mouse buttons directly while it is open.
+- Android: the menu is also drawn on devices whose game presents frames with `eglSwapBuffersWithDamageKHR`/`EXT`. When it cannot be drawn at all (for example a game rendering with Vulkan), a message says so instead of the menu silently closing.
+
 ## [0.2.0] - 2026-11-13
 
 ### Added
@@ -39,7 +46,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - First release: in-game mod list (F8), search, details with README, enable/disable, settings screens (`modmenu.json`, C API, generic JSON editor) and update checks.
 
-[Unreleased]: https://github.com/AFAlimru/ModMenuBE/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/AFAlimru/ModMenuBE/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/AFAlimru/ModMenuBE/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/AFAlimru/ModMenuBE/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/AFAlimru/ModMenuBE/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/AFAlimru/ModMenuBE/releases/tag/v0.1.0

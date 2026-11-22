@@ -1,6 +1,6 @@
 format = 4
 id = "github.com/AFAlimru/ModMenuBE"
-version = "0.2.0"
+version = "0.2.1"
 
 [info]
 name = "ModMenuBE"
@@ -10,8 +10,10 @@ logo = "https://raw.githubusercontent.com/AFAlimru/ModMenuBE/main/assets/icon.pn
 
 # ModMenuBE is a preload-native mod and also runs without LeviLamina (the camera is then not locked
 # while the menu is open). The dependency is declared so that launchers install it alongside
-# LeviLamina, as LeviMC Mods lists LeviLamina mods. The range starts above 26.60.6, the last
-# tooth.json release of LeviLamina, whose "" variant is the server build.
+# LeviLamina, as LeviMC Mods lists LeviLamina mods. Use the bare id, not "#client": LeviLamina releases
+# with a lip.toml (26.60.7 and later) keep the client build as an entry of the "" variant and have no
+# "client" variant, and LeviLauncher replaces an installed tooth.json "LeviLamina#client" with them.
+# The range starts above 26.60.6, the last tooth.json release, whose "" variant is the server build.
 [[variants.""]]
 side = "client"
 platform = "win-x64"
