@@ -1,6 +1,7 @@
 #include "overlay/Overlay.h"
 
 #include "core/Log.h"
+#include "core/Util.h"
 #include "ui/Fonts.h"
 #include "ui/MenuControl.h"
 #include "ui/Ui.h"
@@ -135,6 +136,41 @@ void drainMessages() {
         }
         ImGui_ImplWin32_WndProcHandler(gWindow, m.msg, m.wParam, m.lParam);
     }
+}
+
+// Mouse buttons straight from the input state. Another mod's window procedure installed after
+// ours may keep button messages from reaching it (the menu then hovers but never clicks), so
+// while the menu is drawn and the game window is in front the buttons are read every frame.
+// ImGui drops repeated states, so buttons that also arrive as messages are not doubled.
+void pollMouseButtons() {
+    HWND const fg = GetForegroundWindow();
+    if (!gWindow || (fg != gWindow && !IsChild(fg, gWindow) && !IsChild(gWindow, fg))) return;
+    bool const swapped = GetSystemMetrics(SM_SWAPBUTTON) != 0; // the async state is the physical button
+    int const  left = swapped ? VK_RBUTTON : VK_LBUTTON, right = swapped ? VK_LBUTTON : VK_RBUTTON;
+    ImGuiIO&   io   = ImGui::GetIO();
+    io.AddMouseButtonEvent(0, (GetAsyncKeyState(left) & 0x8000) != 0);
+    io.AddMouseButtonEvent(1, (GetAsyncKeyState(right) & 0x8000) != 0);
+    io.AddMouseButtonEvent(2, (GetAsyncKeyState(VK_MBUTTON) & 0x8000) != 0);
+}
+
+LRESULT CALLBACK wndProcHook(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
+// Logs which module's window procedure sits in front of ours (it sees every message first).
+void reportWindowChain() {
+    static LONG_PTR last = 0;
+    LONG_PTR const  top  = GetWindowLongPtrW(gWindow, GWLP_WNDPROC);
+    if (top == last) return;
+    last = top;
+    if (top == reinterpret_cast<LONG_PTR>(&wndProcHook)) {
+        log::info("window procedure: ModMenuBE is first in the chain");
+        return;
+    }
+    HMODULE owner = nullptr;
+    wchar_t name[MAX_PATH]{};
+    if (GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+                           reinterpret_cast<LPCWSTR>(top), &owner))
+        GetModuleFileNameW(owner, name, MAX_PATH);
+    log::info("window procedure: {} is in front of ModMenuBE (sees messages first)", toUtf8(name));
 }
 
 void releaseBackBuffers() {
@@ -371,6 +407,8 @@ void renderFrame(IDXGISwapChain* swapChain) {
     if (ui::prepareFrame(width, height)) ImGui_ImplDX11_InvalidateDeviceObjects();
     ImGui_ImplDX11_NewFrame();
     drainMessages();
+    pollMouseButtons();
+    reportWindowChain();
     ImGui_ImplWin32_NewFrame();
     ImGui::NewFrame();
     ui::drawFrame();
