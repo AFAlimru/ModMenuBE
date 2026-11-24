@@ -263,6 +263,11 @@ build/windows/x64/release/TestHost.exe <mods\ModMenuBE\ModMenuBE.dll> --open [--
 
 ## English
 
+Windows plugins can also provide a versioned `modmenu.settings.json` sidecar for
+draft Apply/Cancel controls, sliders, text and keyboard combinations. See the
+[compatibility guide](integration/README.md). Existing `modmenu.json` and C API
+routes remain available on both platforms.
+
 A mod menu for Minecraft Bedrock (Windows GDK), modelled on Java's [ModMenu](https://github.com/TerraformersMC/ModMenu) and drawn in the OreUI style, for [LeviLauncher](https://github.com/LiteLDev/LeviLauncher) and LeviLamina players.
 
 ### Features

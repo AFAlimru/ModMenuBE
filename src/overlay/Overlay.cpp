@@ -5,6 +5,7 @@
 #include "ui/Fonts.h"
 #include "ui/MenuControl.h"
 #include "ui/Ui.h"
+#include "ui/LegacySettings.h"
 
 #include <d3d11.h>
 #include <d3d11on12.h>
@@ -128,6 +129,22 @@ void drainMessages() {
         pending.swap(gMessages);
     }
     for (auto const& m : pending) {
+        if (!ui::acceptsUiInput())
+            continue;
+        if (m.msg == WM_KEYDOWN || m.msg == WM_SYSKEYDOWN || m.msg == WM_KEYUP || m.msg == WM_SYSKEYUP) {
+            unsigned key = unsigned(m.wParam);
+            bool extended = (m.lParam & (1 << 24)) != 0;
+            if (key == VK_SHIFT)
+                key = MapVirtualKeyW((unsigned(m.lParam) >> 16) & 255, MAPVK_VSC_TO_VK_EX);
+            else if (key == VK_CONTROL)
+                key = extended ? VK_RCONTROL : VK_LCONTROL;
+            else if (key == VK_MENU)
+                key = extended ? VK_RMENU : VK_LMENU;
+            if (ui::legacy::captureKey(key, m.msg == WM_KEYDOWN || m.msg == WM_SYSKEYDOWN))
+                continue;
+        }
+        if (ui::legacy::capturing() && (m.msg == WM_CHAR || m.msg == WM_SYSCHAR || m.msg == WM_UNICHAR))
+            continue;
         if (m.msg == WM_CHAR && m.wParam >= 0x80 && (m.wParam < 0xD800 || m.wParam > 0xDFFF)) {
             wchar_t w = wchar_t(m.wParam);
             char    utf8[8]{};
@@ -277,6 +294,11 @@ bool initGraphics(IDXGISwapChain* swapChain) {
 }
 
 LRESULT CALLBACK wndProcHook(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+    if (msg == WM_KILLFOCUS || (msg == WM_ACTIVATEAPP && !wParam)) {
+        ui::notifyFocusLost();
+        std::lock_guard lock(gMessageMutex);
+        gMessages.clear();
+    }
     if (msg == WM_KEYDOWN && wParam == VK_F11) {
         // Fullscreen toggles can rebuild the swap chain outside ResizeBuffers;
         // drop every buffer reference first.
@@ -289,7 +311,8 @@ LRESULT CALLBACK wndProcHook(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) 
     }
     if (ui::handleWindowMessage(msg, wParam, lParam)) return 0;
 
-    if (ui::isOpen() && msg != WM_SETCURSOR && msg != WM_INPUT) queueMessage(msg, wParam, lParam);
+    if (ui::acceptsUiInput() && msg != WM_SETCURSOR && msg != WM_INPUT)
+        queueMessage(msg, wParam, lParam);
     if (ui::blocksGameInput()) {
         switch (msg) {
         case WM_SETCURSOR:

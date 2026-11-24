@@ -51,6 +51,7 @@ struct ModInfo {
     bool         enabled = true;      // manifest.json (true) vs manifest.json.close (false)
     bool         loaded  = false;     // its DLL is in the process right now
     bool         self    = false;     // ModMenuBE itself
+    bool legacySettings = false;
     std::vector<std::filesystem::path> configFiles; // editable JSON files (adapter list, else <folder>/config/*.json)
     std::shared_ptr<Adapter const>     adapter;     // modmenu.json, if any
 };

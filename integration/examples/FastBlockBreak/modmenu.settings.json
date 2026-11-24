@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "plugin": {
+    "id": "FastBlockBreak",
+    "entry": "FastBlockBreak.dll",
+    "versions": ["0.2.0-test3"]
+  },
+  "config": {
+    "file": "config.json",
+    "reload": "hot"
+  },
+  "fields": [
+    {
+      "path": "/enabled",
+      "type": "boolean",
+      "default": true,
+      "label": {
+        "en_US": "Enabled",
+        "zh_TW": "啟用",
+        "zh_CN": "启用"
+      },
+      "description": {
+        "en_US": "Enable FastBlockBreak without restarting Minecraft.",
+        "zh_TW": "即時啟用或停用 FastBlockBreak，不需要重啟 Minecraft。",
+        "zh_CN": "即时启用或停用 FastBlockBreak，无需重启 Minecraft。"
+      }
+    }
+  ]
+}

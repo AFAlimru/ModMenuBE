@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "plugin": {"id": "AutoRestock", "entry": "AutoRestock.dll", "versions": ["0.3.1-test4"]},
+  "config": {"file": "config.json", "reload": "hot"},
+  "fields": [
+    {
+      "path": "/enabled", "type": "boolean", "default": true,
+      "category": {"en_US": "Restocking", "zh_TW": "補貨", "zh_CN": "补货"},
+      "label": {"en_US": "Enabled (description)", "zh_TW": "啟用（描述檔）", "zh_CN": "启用（描述文件）"},
+      "description": {"en_US": "Enable AutoRestock. The DLL remains loaded when OFF.", "zh_TW": "啟用 AutoRestock；關閉功能不會卸載 DLL。", "zh_CN": "启用 AutoRestock；关闭功能不会卸载 DLL。"}
+    },
+    {
+      "path": "/preRestockThreshold", "type": "integer", "default": 6, "min": 1, "max": 64, "step": 1,
+      "category": {"en_US": "Restocking", "zh_TW": "補貨", "zh_CN": "补货"},
+      "label": {"en_US": "Restock below (description)", "zh_TW": "低於此數量補貨（描述檔）", "zh_CN": "低于此数量补货（描述文件）"},
+      "description": {"en_US": "Strictly below this count: 17 means 16 or fewer. Main hand and main inventory only.", "zh_TW": "嚴格低於此數量；17 代表 16 或以下。僅主手與主背包。", "zh_CN": "严格低于此数量；17 代表 16 或以下。仅主手与主背包。"}
+    }
+  ]
+}

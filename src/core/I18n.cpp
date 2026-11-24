@@ -66,19 +66,24 @@ Table const kEnUs = {
     {"revert", "Revert"},
     {"done", "Done"},
     {"cancel", "Cancel"},
+    {"passive.apply", "Apply"},
+    {"passive.discard_hint", "Back / Cancel discards unsaved edits"},
     {"got_it", "Got it"},
     {"android.no_frame.vulkan", "ModMenuBE: Minecraft draws with Vulkan on this device, and the menu can only be drawn over OpenGL ES for now."},
     {"android.no_frame", "ModMenuBE: the menu could not be drawn on this device. Please send the ModMenuBE lines of the launcher's Logcat to the author."},
     {"commands", "Commands"},
     {"commands.tip", "Closes ModMenuBE and types this into the chat. Works in a world."},
     {"commands.not_loaded", "The mod is not loaded."},
-    {"commands.tip_partial", "Closes ModMenuBE and types this into the chat for you to finish (the game suggests the rest). Works in a world."},
+    {"commands.tip_partial", "Closes ModMenuBE and types this into the chat for you to finish (the game "
+                             "suggests the rest). Works in a world."},
     {"restart_notice.disabled", "%s is disabled. Restart Minecraft for this to take effect."},
     {"restart_notice.enabled", "%s is enabled. Restart Minecraft to load it."},
     {"settings.button_layout", "Adjust MOD button layout"},
-    {"settings.button_layout.tip", "Opens LeviLauncher's menu: choose the HUD editor there to move, resize or fade the MOD button."},
+    {"settings.button_layout.tip",
+     "Opens LeviLauncher's menu: choose the HUD editor there to move, resize or fade the MOD button."},
     {"settings.button_reset", "Reset MOD button position"},
-    {"settings.button_reset.tip", "Puts the MOD button back at the top centre, next to the game's own buttons."},
+    {"settings.button_reset.tip",
+     "Puts the MOD button back at the top centre, next to the game's own buttons."},
     {"confirm", "Confirm"},
     {"links", "Links"},
     {"link.homepage", "Website"},
@@ -118,7 +123,8 @@ Table const kEnUs = {
     {"open.unbound", "%s has no key bound to open its menu. Bind one in the mod first."},
     {"open.unknown_key", "%s's menu key \"%s\" is not a key ModMenuBE can press."},
     {"json_editor", "Config files"},
-    {"json_editor_hint", "Edited directly in the mod's JSON file. Most mods read it at startup, so restart after saving."},
+    {"json_editor_hint",
+     "Edited directly in the mod's JSON file. Most mods read it at startup, so restart after saving."},
     {"json_parse_error", "This file is not valid JSON: %s"},
     {"unsaved", "Unsaved changes"},
     {"saved", "Saved"},
@@ -135,13 +141,16 @@ Table const kEnUs = {
     {"settings.fullscreen", "Full-screen menu"},
     {"settings.ui_scale", "UI scale"},
     {"settings.curseforge_key", "CurseForge API key"},
-    {"settings.curseforge_key.tip", "Needed only for mods that use CurseForge as update source. Empty = CURSEFORGE_API_KEY."},
+    {"settings.curseforge_key.tip",
+     "Needed only for mods that use CurseForge as update source. Empty = CURSEFORGE_API_KEY."},
     {"hint", "%s: open/close  ·  Esc: close"},
     {"hint.android", "MOD button or F8: open/close  ·  Back: close"},
     {"leviLamina_missing", "LeviLamina is not loaded: LeviLamina mods are listed from their manifests only."},
 };
 
 Table const kZhTw = {
+    {"passive.apply", "套用"},
+    {"passive.discard_hint", "返回或取消會捨棄未儲存的修改"},
     {"title", "模組"},
     {"count", "%d 個模組，%d 個已載入"},
     {"search", "搜尋模組…"},
@@ -183,11 +192,13 @@ Table const kZhTw = {
     {"commands", "指令"},
     {"commands.tip", "關閉 ModMenuBE 並幫你在聊天欄輸入這個指令，需在世界中使用。"},
     {"commands.not_loaded", "這個模組沒有載入。"},
-    {"commands.tip_partial", "關閉 ModMenuBE 並在聊天欄打好這個指令，剩下的參數由你補完（遊戲會提示），需在世界中使用。"},
+    {"commands.tip_partial",
+     "關閉 ModMenuBE 並在聊天欄打好這個指令，剩下的參數由你補完（遊戲會提示），需在世界中使用。"},
     {"restart_notice.disabled", "已停用「%s」。重新啟動 Minecraft 後才會生效。"},
     {"restart_notice.enabled", "已啟用「%s」。重新啟動 Minecraft 後才會載入。"},
     {"settings.button_layout", "調整 MOD 按鈕佈局"},
-    {"settings.button_layout.tip", "打開 LeviLauncher 的選單，在「HUD 編輯器」裡拖曳 MOD 按鈕、調整大小和透明度。"},
+    {"settings.button_layout.tip",
+     "打開 LeviLauncher 的選單，在「HUD 編輯器」裡拖曳 MOD 按鈕、調整大小和透明度。"},
     {"settings.button_reset", "重設 MOD 按鈕位置"},
     {"settings.button_reset.tip", "把 MOD 按鈕放回畫面上方中間、遊戲原本按鈕的旁邊。"},
     {"confirm", "確定"},
@@ -246,7 +257,8 @@ Table const kZhTw = {
     {"settings.fullscreen", "全螢幕顯示選單"},
     {"settings.ui_scale", "介面縮放"},
     {"settings.curseforge_key", "CurseForge API 金鑰"},
-    {"settings.curseforge_key.tip", "只有以 CurseForge 為更新來源的模組需要。留空則使用 CURSEFORGE_API_KEY 環境變數。"},
+    {"settings.curseforge_key.tip",
+     "只有以 CurseForge 為更新來源的模組需要。留空則使用 CURSEFORGE_API_KEY 環境變數。"},
     {"hint", "%s：開啟／關閉 · Esc：關閉"},
     {"hint.android", "MOD 按鈕或 F8：開啟／關閉 · 返回鍵：關閉"},
     {"leviLamina_missing", "LeviLamina 未載入：LeviLamina 模組只會顯示 manifest 資訊。"},
@@ -262,7 +274,7 @@ void reloadLanguage() {
     if (lang == "auto" || lang.empty()) {
 #ifdef _WIN32
         LANGID id = GetUserDefaultUILanguage();
-        lang      = PRIMARYLANGID(id) == LANG_CHINESE ? "zh_TW" : "en_US";
+        lang = PRIMARYLANGID(id) == LANG_CHINESE ? "zh_TW" : "en_US";
 #else
         char value[PROP_VALUE_MAX]{};
         if (__system_property_get("persist.sys.locale", value) <= 0) __system_property_get("ro.product.locale", value);
