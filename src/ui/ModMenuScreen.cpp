@@ -30,6 +30,7 @@
 #include "ui/SafeCall.h"
 #include "ui/SelfConfig.h"
 #include "ui/LegacySettings.h"
+#include "ui/WorkspaceView.h"
 #include "modmenu/ModMenuBinding.h"
 
 #include <imgui.h>
@@ -63,7 +64,7 @@ std::atomic<bool> gPending{false};
 std::atomic<bool> gTextInput{false};
 
 // ---------------------------------------------------------------- screen state (render thread)
-enum class View { List, Config, Json, Legacy };
+enum class View { List, Config, Json, Legacy, Workspace };
 #ifdef _WIN32
 compat::Admission gAdmission;
 std::atomic<bool> gInputActive{false};
@@ -72,7 +73,9 @@ std::atomic<unsigned> gOriginScene{};
 compat::ReleaseGate gReleaseGate;
 #endif
 std::atomic<bool> gFocusLost{false};
+#ifdef _WIN32
 std::atomic<bool> gHotkeyArmed{true};
+#endif
 
 #ifdef _WIN32
 bool foregroundProcess() {
@@ -598,8 +601,10 @@ void drawDetails(ModInfo const& mod) {
     ImGui::SetCursorScreenPos({pos.x, std::max(pos.y + iconSize, y) + s(14)});
 
     // Actions
-    auto screen       = ConfigRegistry::instance().get(mod.name);
+#ifdef _WIN32
+    auto screen = ConfigRegistry::instance().get(mod.name);
     bool apiScreen = legacy::available(mod) || (screen && (screen->external || !screen->categories.empty()));
+#endif
     bool configurable = hasConfig(mod) && !gState.faultedScreens.count(mod.name);
 #ifdef _WIN32
     if (!apiScreen && opensOwnMenu(mod)) {
@@ -630,6 +635,15 @@ void drawDetails(ModInfo const& mod) {
         else toggleEnabled(mod);
     }
     if (mod.self) ore::tooltip(tr("self_disable"));
+    if (workspaces::available(mod)) {
+        ImGui::Dummy({0, s(6)});
+        auto label = mod.adapter->workspace.label.get(activeLanguage());
+        fonts::note(label);
+        if (ore::button("##workspace", label.c_str(), ore::Variant::Primary) && workspaces::open(mod)) {
+            gState.view = View::Workspace;
+            gState.configMod = mod.name;
+        }
+    }
 #ifdef _WIN32
     ImGui::SameLine();
     if (ore::button("##folder", tr("open_folder"), ore::Variant::Dark)) openFolder(mod.folder);
@@ -912,6 +926,11 @@ bool drawOption(Column const& c, ConfigOption const& o) {
 }
 
 void finishConfig() {
+    if (gState.view == View::Workspace) {
+        if (workspaces::back())
+            return;
+        workspaces::close();
+    }
     if (gState.view == View::Legacy)
         legacy::close();
     if (gState.view == View::Config) {
@@ -1184,6 +1203,15 @@ void applyRequests() {
         gRequests = {};
         gPending  = false;
     }
+#ifdef _WIN32
+    if (workspaces::externalActive() && (r.open || r.toggle)) {
+        workspaces::close();
+        gState.view = View::List;
+        gReleaseGate.suspend();
+        r.toggle = false;
+        r.open = true;
+    }
+#endif
     bool wasOpen = gOpen;
     bool open    = wasOpen;
     if (r.toggle) open = !open;
@@ -1210,8 +1238,13 @@ void applyRequests() {
         }
     }
     if (!open && wasOpen) {
-        if (gState.view != View::List) finishConfig();
+        if (gState.view == View::Workspace) {
+            workspaces::close();
+            gState.view = View::List;
+        } else if (gState.view != View::List)
+            finishConfig();
         legacy::suspend();
+        workspaces::suspend();
         gTextInput = false;
     }
     gOpen = open;
@@ -1338,6 +1371,9 @@ void drawFooter(ImVec2 min, float width, float height) {
         legacy::footer(std::max(0.f, x - min.x - s(4)));
         if (cancel)
             finishConfig();
+    } else if (gState.view == View::Workspace) {
+        if (placeRight("##workspace-back", tr("back"), ore::Variant::Dark, false))
+            finishConfig();
     } else if (gState.view == View::Config) {
         if (placeRight("##done", tr("done"), ore::Variant::Primary, false)) finishConfig();
     } else if (gState.view == View::Json && !gState.docs.empty()) {
@@ -1443,7 +1479,9 @@ void requestRescan() {
     gRequests.rescan = true;
     gPending         = true;
 }
-bool isOpen() { return gOpen; }
+bool isOpen() {
+    return gOpen && !workspaces::externalActive();
+}
 
 // ---------------------------------------------------------------- Ui.h
 bool wantsFrame() { return gOpen || gPending; }
@@ -1467,6 +1505,7 @@ bool prepareFrame(float width, float height) {
         gInputActive = false;
         gReleaseGate.suspend();
         legacy::suspend();
+        workspaces::suspend();
         gTextInput = false;
         ImGui::GetIO().ClearInputKeys();
         ImGui::GetIO().ClearInputMouse();
@@ -1494,6 +1533,18 @@ bool prepareFrame(float width, float height) {
     if (admitted)
         admitted = gReleaseGate.allow(keys);
     gInputActive = gOpen && admitted;
+    if (gState.view == View::Workspace) {
+        bool released = std::none_of(keys.begin(), keys.end(), [](bool down) { return down; });
+        bool suspended = workspaces::inputSuspended();
+        if (!workspaces::tick(gOpen && (!native || gAdmission.retained()), foregroundProcess(), released))
+            requestClose("workspace origin/session changed");
+        if (workspaces::inputSuspended())
+            gInputActive = false;
+        else if (suspended) {
+            gReleaseGate.suspend();
+            gInputActive = false;
+        }
+    }
     if (native && gOpen && gAdmission.retained()) {
         gOriginIdentity = observation.identity;
         gOriginScene = observation.scene;
@@ -1575,9 +1626,12 @@ void drawFrame() {
         if (int n = UpdateChecker::instance().availableCount()) subtitle += "  ·  " + fmt(tr("updates_count"), n);
     } else {
         auto screen = ConfigRegistry::instance().get(gState.configMod);
-        titleText   = screen && !screen->title.empty() ? screen->title
-                                                       : gState.configMod + " · "
-                                                             + (gState.view == View::Json ? tr("json_editor") : tr("config"));
+        titleText = screen && !screen->title.empty()
+                        ? screen->title
+                        : gState.configMod + " · " +
+                              (gState.view == View::Json        ? tr("json_editor")
+                               : gState.view == View::Workspace ? tr("workspace.title")
+                                                                : tr("config"));
     }
     drawHeader(min, width, headerH, titleText.c_str(), gState.view != View::List, subtitle.c_str());
 
@@ -1591,6 +1645,8 @@ void drawFrame() {
         float h = bodyMax.y - bodyMin.y;
         if (gState.view == View::Legacy)
             legacy::draw(h);
+        else if (gState.view == View::Workspace)
+            workspaces::draw(h);
         else if (gState.view == View::Config)
             drawConfigBody(h);
         else drawJsonBody(h);
@@ -1604,7 +1660,10 @@ void drawFrame() {
     gTextInput = io.WantTextInput;
 }
 
-void onDeviceLost() { icons::clear(); }
+void onDeviceLost() {
+    icons::clear();
+    workspaces::releaseResources();
+}
 
 #ifdef _WIN32
 void notifyFocusLost() {
@@ -1634,6 +1693,8 @@ bool handleWindowMessage(UINT msg, WPARAM wParam, LPARAM lParam) {
     }
     if (!foregroundProcess())
         return false;
+    if (workspaces::inputSuspended() && !workspaces::externalActive())
+        return false;
     if (compat::nativeReady()) {
         auto observation = compat::nativeObservation();
         if (!observation.eligible || !observation.foreground)
@@ -1662,7 +1723,10 @@ bool handleWindowMessage(UINT msg, WPARAM wParam, LPARAM lParam) {
         snapshot[b.key] = true;
         if (binding::Matches(b, snapshot)) {
             if (!repeat)
-                requestToggle("keyboard chord");
+                if (workspaces::externalActive())
+                    requestOpen();
+                else
+                    requestToggle("keyboard chord");
             return true;
         }
     }
@@ -1672,7 +1736,7 @@ bool handleWindowMessage(UINT msg, WPARAM wParam, LPARAM lParam) {
 #endif
 
 bool blocksGameInput() {
-    if (!gOpen || !settings().pauseInputWhileOpen)
+    if (!gOpen || workspaces::externalActive() || !settings().pauseInputWhileOpen)
         return false;
 #ifdef _WIN32
     if (overlay::graphicsFaulted() || gFocusLost || !foregroundProcess())

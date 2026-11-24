@@ -62,3 +62,6 @@ Build with xmake, then build and run `SettingsCompatibilityTests`,
 `ExternalSettingsTests`, `SettingsTransactionTests`, `TextEditorTests` and
 `SettingsFlowTests` and `SettingsUiTests` in Debug and Release. The tests use isolated temporary
 files; they do not load Minecraft or change installed plugin settings.
+
+Optional [Workspace pages](WORKSPACES.md) use an independent copy-buffer API.
+The base configuration API remains unchanged; Android hides unsupported Workspace entries.

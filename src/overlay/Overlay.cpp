@@ -877,6 +877,9 @@ void uninstall() {
     gInstalled = false;
 }
 
+bool installed() noexcept {
+    return gInstalled.load();
+}
 HWND gameWindow() { return gWindow; }
 bool graphicsFaulted() noexcept {
     return gGraphicsFailed.load();

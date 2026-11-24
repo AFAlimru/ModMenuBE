@@ -86,6 +86,8 @@ add_library(${MOD_LIBRARY_NAME} SHARED
     src/platform/AndroidPlatform.cpp
     src/platform/AndroidIconCache.cpp
     # shared with the Windows build
+    ${SHARED_SRC}/workspace/Entry.cpp
+    ${SHARED_SRC}/workspace/Api.cpp
     ${SHARED_SRC}/api/ExportedApi.cpp
     ${SHARED_SRC}/core/Adapter.cpp
     ${SHARED_SRC}/core/ModCommands.cpp
@@ -155,3 +157,8 @@ add_custom_target(levi_package
     COMMENT "Packaging ${MOD_ID}.levipack"
     VERBATIM
 )
+
+# Compile-only policy regression, excluded from the runtime library/package.
+add_library(WorkspacePlatformContract OBJECT EXCLUDE_FROM_ALL ../tests/WorkspacePlatformContract.cpp)
+target_include_directories(WorkspacePlatformContract PRIVATE "${SHARED_SRC}" "${CMAKE_CURRENT_SOURCE_DIR}/../include")
+target_link_libraries(WorkspacePlatformContract PRIVATE nlohmann_json::nlohmann_json)

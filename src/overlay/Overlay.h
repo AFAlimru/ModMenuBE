@@ -19,6 +19,7 @@ bool observeSwapChainCreation();
 bool install();
 void uninstall();
 
+bool installed() noexcept;
 HWND gameWindow();
 // Also releases native-menu input ownership when a graphics failure latches.
 bool graphicsFaulted() noexcept;

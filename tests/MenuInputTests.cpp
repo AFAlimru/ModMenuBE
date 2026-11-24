@@ -2,6 +2,8 @@
 #include "compat/NativeBridge.h"
 #include "ui/Ui.h"
 #include "modmenu/ModMenuBinding.h"
+#include "workspace/Service.h"
+#include "ui/WorkspaceView.h"
 #include <iostream>
 
 namespace fixture {
@@ -26,6 +28,7 @@ DWORD windowProcess(HWND, DWORD* pid) {
 #undef GetAsyncKeyState
 #undef GetForegroundWindow
 #undef GetWindowThreadProcessId
+#include "../src/ui/WorkspaceView.cpp"
 
 namespace modmenu::compat {
 bool installNativeBridge() {
@@ -123,6 +126,58 @@ int main() {
     check(!gate.allow(keys), "held key cannot trigger on return");
     keys['K'] = false;
     check(gate.allow(keys), "released inputs allow safe resume");
+    // Exercise the real frame preparation and Workspace lifecycle together.
+    ImGui::CreateContext();
+    ImGui::GetIO().IniFilename = nullptr;
+    fixture::native = false;
+    fixture::foreground = true;
+    ui::gOpen = true;
+    ui::gInputActive = true;
+    ui::gState.view = ui::View::Workspace;
+    ui::gState.configMod = "FocusFixture";
+    auto session = workspace::service().registerProvider(
+        R"({"schemaVersion":1,"plugin":{"id":"FocusFixture","entry":"Focus.dll","versions":["1"]},"pages":[{"id":"jobs","label":"Jobs","controls":[{"id":"status","type":"status","label":"Status"}]}]})",
+        "FocusFixture", "Focus.dll", "1");
+    ModInfo mod;
+    mod.name = "FocusFixture";
+    mod.loaded = true;
+    auto adapter = std::make_shared<Adapter>();
+    adapter->workspace = workspace::parseEntry(
+        R"({"workspace":{"version":1,"entries":[{"id":"jobs","type":"page","target":"jobs","label":"Jobs"}]}})");
+    mod.adapter = adapter;
+    check(session && ui::workspaces::open(mod),
+          "loaded opt-in workspace opens without exact native admission");
+    ui::prepareFrame(900, 760);
+    ui::workspaces::model.page = "jobs";
+    ui::workspaces::model.scroll["jobs"] = 24;
+    ui::workspaces::model.committed["name"] = "Saved";
+    ui::workspaces::model.text["name"] = "Unfinished";
+    ui::workspaces::model.editing = "name";
+    ui::notifyFocusLost();
+    fixture::foreground = false;
+    ui::prepareFrame(900, 760);
+    check(ui::gOpen && ui::gState.view == ui::View::Workspace && !ui::acceptsUiInput(),
+          "real frame retains workspace while unfocused");
+    check(ui::workspaces::model.text["name"] == "Saved" && ui::workspaces::model.page == "jobs" &&
+              ui::workspaces::model.scroll["jobs"] == 24,
+          "real blur cancels unfinished edit and retains page scroll");
+    fixture::foreground = true;
+    fixture::physicalKeys['K'] = true;
+    ui::prepareFrame(900, 760);
+    check(!ui::acceptsUiInput(), "real frame gates held input after focus recovery");
+    fixture::physicalKeys['K'] = false;
+    ui::prepareFrame(900, 760);
+    check(ui::gOpen && ui::gState.view == ui::View::Workspace && ui::acceptsUiInput(),
+          "real frame restores original workspace after release");
+    fixture::native = true;
+    fixture::observed = {true, true, 1, 100};
+    ui::prepareFrame(900, 760);
+    fixture::observed.identity = 101;
+    ui::prepareFrame(900, 760);
+    check(!ui::gOpen && ui::gState.view == ui::View::List,
+          "real native origin change closes retained workspace");
+    workspace::service().unregisterProvider(session);
+    ImGui::DestroyContext();
     std::cout << "Production menu input checks: " << checks << ", failures: " << failures << '\n';
     return failures ? 1 : 0;
 }
