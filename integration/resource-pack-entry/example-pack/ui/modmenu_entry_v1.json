@@ -1,0 +1,21 @@
+{
+  "namespace": "modmenu_entry_v1",
+  "button@common_buttons.light_text_button": {
+    "size": [96, 24],
+    "$button_text|default": "modmenu.entry.open",
+    "$pressed_button_name": "button.modmenu.open",
+    "$focus_id|default": "modmenu_resource_pack_entry",
+    "button_mappings": [
+      {
+        "from_button_id": "button.menu_select",
+        "to_button_id": "$pressed_button_name",
+        "mapping_type": "pressed"
+      },
+      {
+        "from_button_id": "button.menu_ok",
+        "to_button_id": "$pressed_button_name",
+        "mapping_type": "focused"
+      }
+    ]
+  }
+}

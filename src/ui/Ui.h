@@ -21,6 +21,8 @@ void onDeviceLost();
 // Window thread. Returns true if the message was consumed (hotkey, key capture).
 bool handleWindowMessage(UINT msg, WPARAM wParam, LPARAM lParam);
 void notifyFocusLost();
+// Release-gate maintenance also runs while the menu has no UI frames.
+void pollInputRelease();
 #else
 // Base UI scale (dp -> px) chosen by the platform; 0 = derive from the window height.
 void setPlatformScale(float scale);

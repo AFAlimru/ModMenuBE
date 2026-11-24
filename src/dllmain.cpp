@@ -8,31 +8,35 @@
 #include "overlay/GameInputGuard.h"
 #include "overlay/Overlay.h"
 #include "ui/SelfConfig.h"
+#include "compat/NativeBridge.h"
 
 #include <Windows.h>
+#include <exception>
 
 namespace {
 
 using namespace modmenu;
 
-struct WindowSearch {
-    DWORD pid;
-    HWND  found;
-};
-
-BOOL CALLBACK findWindow(HWND hwnd, LPARAM lp) {
-    auto* search = reinterpret_cast<WindowSearch*>(lp);
-    DWORD pid    = 0;
-    GetWindowThreadProcessId(hwnd, &pid);
-    if (pid == search->pid && IsWindowVisible(hwnd) && GetWindow(hwnd, GW_OWNER) == nullptr) {
-        search->found = hwnd;
-        return FALSE;
+DWORD WINAPI nativeEntryThread(LPVOID) {
+    try {
+        if (!compat::installNativeBridge())
+            log::warn("Optional native entry unavailable; overlay and hotkey remain active");
+    } catch (std::exception const& error) {
+        log::warn("Optional native entry failed: {}", error.what());
+    } catch (...) {
+        log::warn("Optional native entry failed unexpectedly");
     }
-    return TRUE;
+    return 0;
 }
 
-DWORD WINAPI initThread(LPVOID) {
+DWORD initThreadImpl() {
     log::init();
+    log::info("ModMenuBE initialization worker started");
+    // Only public DXGI creation observation is enabled before exact native
+    // admission. Scans and image hashing must not make us miss the game chain.
+    if (!overlay::observeSwapChainCreation()) {
+        log::warn("Early DXGI creation observation unavailable; continuing with Present installation");
+    }
     settings().load();
     reloadLanguage();
     ui::registerSelfConfig();
@@ -42,20 +46,37 @@ DWORD WINAPI initThread(LPVOID) {
     log::info("ModMenuBE loaded from {} ({} mods found)", pathUtf8(paths::selfDir()),
               ModRegistry::instance().mods()->size());
 
-    // Hook once the game has a window, so DXGI and the game's device exist.
-    WindowSearch search{GetCurrentProcessId(), nullptr};
-    for (int i = 0; i < 1200 && !search.found; ++i) { // up to 2 minutes
-        EnumWindows(findWindow, reinterpret_cast<LPARAM>(&search));
-        if (!search.found) Sleep(100);
-    }
-    if (!search.found) {
-        log::error("no game window appeared; overlay not installed");
-        return 0;
-    }
+    // Definition hooks must observe the first resource load. Starting this
+    // independent worker after our potentially slow hidden graphics probe
+    // loses that load on faster game/UI startup paths. Native admission still
+    // cannot delay or prevent overlay initialization.
+    if (HANDLE worker = CreateThread(nullptr, 0, nativeEntryThread, nullptr, 0, nullptr))
+        CloseHandle(worker);
+    else
+        log::warn("Optional native entry worker unavailable; overlay remains active");
+
+    // Our own hidden DXGI probe can install before the game creates its window
+    // and swapchain. Waiting for that window could miss the creation queue.
     for (int attempt = 0; attempt < 5; ++attempt) {
-        if (overlay::install()) return 0;
+        log::info("Installing DXGI overlay (attempt {})", attempt + 1);
+        if (overlay::install()) {
+            return 0;
+        }
         Sleep(1000);
     }
+    overlay::uninstall();
+    return 0;
+}
+
+DWORD WINAPI initThread(LPVOID) {
+    try {
+        return initThreadImpl();
+    } catch (std::exception const& e) {
+        log::error("Initialization refused: {}", e.what());
+    } catch (...) {
+        log::error("Initialization refused: unexpected failure");
+    }
+    overlay::uninstall();
     return 0;
 }
 
