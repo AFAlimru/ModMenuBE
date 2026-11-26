@@ -43,6 +43,14 @@ namespace modmenu::paths {
 std::filesystem::path selfDir() { return std::filesystem::temp_directory_path() / "ModMenuUiTests"; }
 std::filesystem::path modsDir() { return selfDir().parent_path(); }
 }
+#if __has_include("compat/NativeBridge.h")
+// I18n gains an optional native language source in the next review increment.
+// Keep this UI fixture independent of native game installation and admission.
+namespace modmenu::compat {
+bool nativeReady() { return false; }
+std::string gameLanguage() { return "en_US"; }
+}
+#endif
 
 int main() {
     using namespace modmenu;
