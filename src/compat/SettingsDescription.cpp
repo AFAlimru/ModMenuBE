@@ -229,7 +229,6 @@ SettingsDefinition ParseSettingsDescription(std::string const &bytes, std::strin
                 f.unit = Text(raw.at("unit"), 16);
         } else if (type == "text" && schemaVersion >= 3) {
             f.type = SettingType::Text;
-            f.textFormat = TextFormat::Public;
             f.minBytes = Integer(raw.at("minBytes"));
             f.maxBytes = Integer(raw.at("maxBytes"));
             Require(f.minBytes <= f.maxBytes && f.maxBytes > 0 && f.maxBytes <= 4096,

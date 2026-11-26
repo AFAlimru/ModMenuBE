@@ -875,7 +875,7 @@ bool drawOption(Column const& c, ConfigOption const& o) {
         optionCard(c, id, o.label, o.tooltip, {}, ControlKind::Button, [&](float w) {
             auto buttonLabel =
                 (gState.configMod == "ModMenuBE" && o.id == "hotkey")
-                    ? (legacy::capturing() ? std::string("Press keys (Esc = Unbound)")
+                    ? (legacy::capturing() ? std::string(tr("passive.capture"))
                                            : binding::Token({unsigned(settings().hotkey.load()),
                                                              settings().hotkeyModifiers.load()}))
                     : o.label;

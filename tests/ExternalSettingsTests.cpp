@@ -377,13 +377,18 @@ void ExternalSettingsChecks(void (*check)(bool, char const *)) {
     fs::create_directory(legacy);
     Write(legacy / "manifest.json", R"({"entry":"AutoRestock.dll","version":"0.3.1"})");
     Write(legacy / "config.json", R"({"enabled":true,"preRestockThreshold":17})");
-    auto legacyDraft = LoadSettings(root, "AutoRestock");
-    check(legacyDraft.valid, "absent sidecar retains built-in adapter");
+    for (auto id : {"AutoRestock", "ContainerPreview", "FakeSneak", "MouseTweaksBedrock", "AutoClick",
+                    "AutoJumpReset"}) {
+        auto plugin = root / id;
+        fs::create_directories(plugin);
+        Write(plugin / "manifest.json", Json{{"entry", std::string(id) + ".dll"}, {"version", "1"}}.dump());
+        Write(plugin / "config.json", "{}");
+        check(!InspectSettings(root, id).available && !LoadSettings(root, id).valid,
+              "plugin names alone cannot opt into passive settings");
+    }
     Write(legacy / "modmenu.settings.json", "{}");
     check(!LoadSettings(root, "AutoRestock").valid,
-          "invalid present description cannot silently fall back to built-in fields");
-    check(!ApplySettings(root, legacyDraft).saved,
-          "new description invalidates previously opened built-in draft");
+          "invalid present description cannot silently invent settings fields");
     // The shipped author examples pass through the same filesystem resolver/save
     // consumer, not a separate schema-only lookalike.
     auto examples = fs::current_path();

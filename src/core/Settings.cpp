@@ -52,9 +52,10 @@ void Settings::load() {
     if (auto it = j.find("hotkey"); it != j.end()) {
         if (it->is_number_integer()) {
             auto key = it->get<int64_t>();
-            if (key == 0 || (key > 0 && key <= 255 && binding::Allowed(unsigned(key))))
-                hotkey = int(key);
-            if (auto mask = j.find("hotkeyModifiers"); mask != j.end() && mask->is_number_integer()) {
+            bool accepted = key > 0 && key <= 255 && binding::Allowed(unsigned(key));
+            hotkey = accepted ? int(key) : 0x77;
+            if (auto mask = j.find("hotkeyModifiers");
+                accepted && mask != j.end() && mask->is_number_integer()) {
                 auto value = mask->get<int64_t>();
                 if (value >= 0 && value <= 7 && hotkey != 0)
                     hotkeyModifiers = unsigned(value);
@@ -63,8 +64,8 @@ void Settings::load() {
             // Migrate local string-form configurations; old readers still need
             // an integer primary key when this configuration is saved again.
             if (auto value = binding::ParseInput(it->get<std::string>())) {
-                hotkey = int(value->key);
-                hotkeyModifiers = value->modifiers;
+                hotkey = value->key ? int(value->key) : 0x77;
+                hotkeyModifiers = value->key ? value->modifiers : 0;
             }
         }
     }

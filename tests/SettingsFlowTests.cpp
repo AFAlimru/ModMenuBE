@@ -86,8 +86,8 @@ int main() {
         captureKeys = {};
         capture.Begin(captureKeys);
         captureKeys[27] = true;
-        auto unbound = capture.Event(27, true, captureKeys);
-        check(unbound && unbound->key == 0, "Escape captures NONE");
+        auto cancelled = capture.Event(27, true, captureKeys);
+        check(!cancelled && !capture.Active(), "Escape cancels capture without emitting a binding");
         for (unsigned key : {1u, 2u, 4u, 5u, 6u, 27u})
             check(!b::Allowed(key), "mouse and Escape forbidden as primary");
         auto original = draft.original;
@@ -102,6 +102,13 @@ int main() {
         check(saved.original.find("CTRL+SHIFT+LALT+K") != std::string::npos, "canonical chord saved");
         check(saved.original.find("0.7") != std::string::npos, "decimal preserved");
         check(saved.original.find("untouched") != std::string::npos, "unknown config key preserved");
+        auto unbindDraft = LoadSettings(root, "Example");
+        check(SetBinding(unbindDraft.fields[1], {}), "explicit plugin unbind edits its draft");
+        check(LoadSettings(root, "Example").original == saved.original,
+              "unbinding is not saved by editing or cancelling the draft");
+        auto unbound = ApplySettings(root, unbindDraft);
+        check(unbound.saved && SettingText(LoadSettings(root, "Example").fields[1]) == "NONE",
+              "Apply persists explicit unbinding through the production transaction");
         write(root / "Example" / "config.json", R"({"enabled":true,"key":"F7","scale":0.5})");
         check(!ApplySettings(root, saved).saved, "concurrent external change refused");
         std::cout << "PASS passive transactions, decimal slider, and chord capture\n";

@@ -98,7 +98,7 @@ void registerSelfConfig() {
 #endif
     addBool("checkUpdatesOnOpen", "settings.check_updates", &settings().checkUpdatesOnOpen);
     addBool("fullscreen", "settings.fullscreen", &settings().fullscreen);
-    addBool("pauseInputWhileOpen", "settings.block_input", &settings().pauseInputWhileOpen);
+    addBool("blockGameInput", "settings.block_input", &settings().pauseInputWhileOpen);
     {
         ConfigOption o;
         o.kind      = OptionKind::String;

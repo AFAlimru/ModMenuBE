@@ -340,7 +340,7 @@ class Capture {
         modifiers_ = Modifiers(s);
         if (k == 27 && down) {
             Cancel();
-            return Binding{};
+            return {};
         }
         if (blocked_[k]) {
             if (!down)

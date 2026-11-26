@@ -291,8 +291,7 @@ void ModRegistry::rescan() {
 
 #ifdef _WIN32
         info->legacySettings =
-            info->loaded && (std::filesystem::is_regular_file(folder / L"modmenu.settings.json", ec) ||
-                             !menu::SettingsSchema(folder.filename().string()).fields.empty());
+            info->loaded && std::filesystem::is_regular_file(folder / L"modmenu.settings.json", ec);
 #endif
         if (info->adapter && info->adapter->configDisabled) {
             // The author turned the config editor off.

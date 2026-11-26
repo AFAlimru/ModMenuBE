@@ -29,8 +29,10 @@ the [project license](../LICENSE).
   `OEM_PLUS` for the plus key and assigned `VK_XX` fallback names returned by
   `KeyToken`. Escape, mouse buttons, unassigned and sentinel codes are refused.
 - Click the control, hold Ctrl/Shift/Left Alt, then press the primary key. A modifier
-  alone is captured on release. Esc selects Unbound without saving; Backspace
-  is bindable. Mouse clicks never become a binding. Apply saves; Cancel discards.
+  alone is captured on release. Esc cancels capture without changing the value;
+  Backspace is bindable. Use the separate Unbind button when the field allows
+  `NONE`. Mouse clicks never become a binding. Apply saves; Cancel discards.
+  ModMenuBE's own menu hotkey cannot be unbound.
 - Matching uses the **exact Ctrl/Shift/Left Alt mask**. `CTRL+K` does not match bare K
   or Ctrl+Shift+K. The required modifiers must precede a fresh primary press.
   Late modifiers, repeats and preheld keys after focus/config changes do not
@@ -71,7 +73,8 @@ v4 維持只有 Ctrl／Shift 組合；v5 才啟用左 Alt，右 Alt／AltGr 不�
 
 儲存格式為 `NONE`、`K`、`CTRL+K`、`SHIFT+K`、`CTRL+SHIFT+K` 及左 Alt 組合（如 `LALT+K`、`CTRL+SHIFT+LALT+K`），最多 48 bytes。
 一般鍵盤鍵、F1–F24、數字小鍵盤、標點、編輯／導覽鍵及可觀測的媒體鍵均可使用。
-Esc 與滑鼠按鍵不可綁定；Esc 設為無綁定，Backspace 可作為正常快捷鍵。
+Esc 與滑鼠按鍵不可綁定；Esc 取消捕捉並保留原值，Backspace 可作為正常快捷鍵。
+允許 `NONE` 的插件欄位透過獨立「解除綁定」按鈕清除；ModMenuBE 自身熱鍵不可解除。
 
 點擊綁定欄位後，按住 Ctrl／Shift／左 Alt，再按主鍵；只綁 Ctrl／Shift／左 Alt 時，放開後確認。
 套用才儲存，取消捨棄草稿。修飾鍵必須完整且精確符合；先按住 K 再補 Ctrl 不觸發，

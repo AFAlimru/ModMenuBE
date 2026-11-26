@@ -126,13 +126,7 @@ struct Sources {
             schema = ParseSettingsDescription(descriptionBytes, id, j.value("entry", std::string{}),
                                               j.value("version", std::string{}));
         } else {
-            if (GetLastError() != ERROR_FILE_NOT_FOUND)
-                throw std::runtime_error("Settings description unavailable");
-            schema = SettingsSchema(id);
-            if (schema.fields.empty())
-                throw std::runtime_error("No verified settings adapter");
-            if (j.value("entry", std::string{}) != id + ".dll")
-                throw std::runtime_error("Plugin entry does not match adapter");
+            throw std::runtime_error("Settings sidecar unavailable");
         }
     }
 };
@@ -159,26 +153,9 @@ std::vector<SettingField> Fields(SettingsDefinition const &a, Json const &j, Num
                         throw std::runtime_error("Invalid legacy key");
                     continue;
                 }
-                if (!f.external &&
-                    ((f.type == SettingType::Key && f.keyFormat == KeyFormat::AutoJumpReset) ||
-                     f.textFormat == TextFormat::Delay) &&
-                    v.is_number_integer() && v >= 0 && v <= (f.type == SettingType::Key ? 255 : 5000)) {
-                    if (f.type == SettingType::Key) {
-                        char token[16]{};
-                        std::snprintf(token, sizeof(token), "0x%02X", v.get<unsigned>());
-                        f.value = std::string(token);
-                    } else
-                        f.value = std::to_string(v.get<unsigned>());
-                } else {
-                    if (!v.is_string())
-                        throw std::runtime_error("Expected key or text: " + f.label);
-                    auto s = v.get<std::string>();
-                    if (f.type == SettingType::Key && !f.external)
-                        for (auto &c : s)
-                            if (c >= 'a' && c <= 'z')
-                                c -= 32;
-                    f.value = s;
-                }
+                if (!v.is_string())
+                    throw std::runtime_error("Expected key or text: " + f.label);
+                f.value = v.get<std::string>();
             } else if (f.type == SettingType::Slider) {
                 if (!v.is_number() || (!f.slider.decimal && !v.is_number_integer()))
                     throw std::runtime_error("Invalid number: " + f.label);
@@ -225,9 +202,6 @@ void CleanupTemporary(fs::path const &p, bool created) {
         DeleteFileW(p.c_str());
 }
 } // namespace
-bool HasSettings(std::string const &id) {
-    return !SettingsSchema(id).fields.empty();
-}
 SettingsAvailability InspectSettings(fs::path const &mods, std::string const &id) {
     try {
         if (!SafeSettingsId(id))
@@ -348,10 +322,6 @@ SettingsDraft ApplySettings(fs::path const &mods, SettingsDraft const &draft) {
             now.nFileIndexHigh != info.nFileIndexHigh || now.nFileIndexLow != info.nFileIndexLow ||
             ReadHandle(current.h, a.limit) != draft.original)
             throw std::runtime_error("Config replaced externally. Cancel and reopen Configure.");
-        if (!a.external &&
-            GetFileAttributesW((directory / "modmenu.settings.json").c_str()) != INVALID_FILE_ATTRIBUTES)
-            throw std::runtime_error(
-                "Settings description or manifest changed. Cancel and reopen Configure.");
         if (!ReplaceFileW(path.c_str(), temporary.c_str(), nullptr, 0, nullptr, nullptr))
             throw std::runtime_error("Atomic save failed; exact backup retained. Cancel and inspect the "
                                      "current config before retrying.");
@@ -384,24 +354,10 @@ std::string SettingText(SettingField const &field) {
 }
 bool SetKey(SettingField &field, unsigned key) {
     if (field.type == SettingType::Binding)
-        return SetBinding(field, {key == 27 ? 0u : key, 0});
+        return SetBinding(field, {key, 0});
     if (field.type != SettingType::Key)
         return false;
     std::string name;
-    if (!field.external && field.keyFormat != KeyFormat::Menu) {
-        if (key == 27)
-            key = 0;
-        else if (key < 8 || key >= 255 || (key >= 91 && key <= 93))
-            return false;
-        char token[16]{};
-        std::snprintf(token, sizeof(token), "0x%02X", key);
-        auto copy = field;
-        copy.value = std::string(token);
-        if (!Valid(copy))
-            return false;
-        field.value = copy.value;
-        return true;
-    }
     if ((key >= 'A' && key <= 'Z') || (key >= '0' && key <= '9'))
         name = char(key);
     else if (key >= 112 && key <= 135)
@@ -450,8 +406,7 @@ bool SetKey(SettingField &field, unsigned key) {
         case 19:
             name = "PAUSE";
             break;
-        case 27:
-        case 8:
+        case 0:
             name = "NONE";
             break;
         default:

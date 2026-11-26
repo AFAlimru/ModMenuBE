@@ -82,7 +82,12 @@ int main() {
     }
     config(R"({"hotkey":0,"hotkeyModifiers":7})");
     settings.load();
-    check(settings.hotkey == 0 && settings.hotkeyModifiers == 0, "unbound key has no modifiers");
+    check(settings.hotkey == 0x77 && settings.hotkeyModifiers == 0,
+          "unbound menu key recovers F8 so the menu remains reachable");
+    config(R"({"hotkey":"NONE"})");
+    settings.load();
+    check(settings.hotkey == 0x77 && settings.hotkeyModifiers == 0,
+          "unbound string migration cannot disable the menu entry");
     std::cout << "Settings compatibility failures: " << failures << '\n';
     return failures ? 1 : 0;
 }

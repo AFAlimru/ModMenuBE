@@ -8,9 +8,6 @@
 #include "modmenu/ModMenuBinding.h"
 namespace menu {
 enum class SettingType { Boolean, Integer, Choice, Key, Text, Slider, Binding };
-// Internal legacy adapters only. The public passive v1 contract is unchanged.
-enum class TextFormat { None, Delay, SlotMap, KeyList, Public };
-enum class KeyFormat { Menu, AutoClick, AutoJumpReset };
 struct SliderValue {
     std::int64_t ticks{};
     bool operator==(SliderValue const &) const = default;
@@ -36,8 +33,6 @@ struct SettingField {
     bool external{};
     SettingTranslation labelText, categoryText, descriptionText;
     std::vector<SettingTranslation> optionText;
-    TextFormat textFormat{};
-    KeyFormat keyFormat{};
     SliderSpec slider;
     std::size_t minBytes{}, maxBytes{4096};
     bool identifier{};
@@ -52,7 +47,6 @@ struct SettingsDefinition {
     std::vector<SettingField> fields;
     bool external{}, hotReload{};
 };
-SettingsDefinition SettingsSchema(std::string const &id);
 SettingsDefinition ParseSettingsDescription(std::string const &bytes, std::string const &id,
                                             std::string const &entry, std::string const &version);
 bool SafeSettingsId(std::string_view);
@@ -79,7 +73,6 @@ struct SettingsAvailability {
     std::string reason;
 };
 SettingsAvailability InspectSettings(std::filesystem::path const &mods, std::string const &id);
-bool HasSettings(std::string const &id);
 SettingsDraft LoadSettings(std::filesystem::path const &mods, std::string const &id);
 SettingsDraft ApplySettings(std::filesystem::path const &mods, SettingsDraft const &draft);
 std::string SettingText(SettingField const &);

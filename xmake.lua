@@ -42,6 +42,21 @@ target("SettingsCompatibilityTests")
     add_syslinks("user32", "shell32")
     add_cxflags("/utf-8", "/EHsc")
 
+target("SettingsUiTests")
+    set_default(false)
+    set_kind("binary")
+    set_languages("c++20")
+    add_includedirs("include", "src", "src/compat")
+    add_files("tests/SettingsUiTests.cpp", "src/ui/OreTheme.cpp", "src/ui/SelfConfig.cpp",
+              "src/core/ConfigRegistry.cpp", "src/core/I18n.cpp", "src/core/Settings.cpp",
+              "src/core/Util.cpp", "src/core/Log.cpp", "src/compat/Settings.cpp",
+              "src/compat/SettingsService.cpp")
+    add_files(table.unpack(passive_controls))
+    add_packages("imgui", "nlohmann_json")
+    add_defines("NOMINMAX", "WIN32_LEAN_AND_MEAN")
+    add_syslinks("user32", "shell32")
+    add_cxflags("/utf-8", "/EHsc")
+
 target("ModMenuBE")
     set_kind("shared")
     set_languages("c++20")

@@ -64,7 +64,7 @@ void open(ModInfo const &m) {
     root = m.folder.parent_path();
     ticket = compat::settingsService().load(root, m.folder.filename().string());
     draft.id = m.folder.filename().string();
-    draft.message = ticket ? "Loading settings..." : "Settings worker is busy; reopen this page.";
+    draft.message = tr(ticket ? "passive.loading" : "passive.worker_busy");
     category = 0;
 }
 bool capturing() {
@@ -99,19 +99,26 @@ bool captureKey(unsigned key, bool down) {
         }
         return true;
     }
-    if (auto value = capture.Event(key, down, keys)) {
+    auto value = capture.Event(key, down, keys);
+    if (value) {
         if (selfBinding) {
-            settings().hotkey = int(value->key);
-            settings().hotkeyModifiers = value->modifiers;
-            selfBinding = false;
+            if (value->key) {
+                settings().hotkey = int(value->key);
+                settings().hotkeyModifiers = value->modifiers;
+            }
         } else if (field >= 0 && std::size_t(field) < draft.fields.size()) {
             auto &f = draft.fields[field];
             bool accepted = f.type == menu::SettingType::Binding
                                 ? menu::SetBinding(f, *value)
-                                : menu::SetKey(f, value->key ? value->key : 27);
+                                : menu::SetKey(f, value->key);
             if (!accepted)
-                draft.message = "This legacy field does not accept that key; its value was preserved.";
+                draft.message = tr("passive.key_rejected");
         }
+    }
+    // A cancelled capture emits no new value. Consume Esc through its release
+    // so it cannot also navigate out of Configure in this frame.
+    if (!capture.Active()) {
+        selfBinding = false;
         field = -1;
         releaseBarrier = true;
     }
@@ -184,8 +191,12 @@ void draw(float height) {
                 ImGui::EndCombo();
             }
         } else if (f.type == menu::SettingType::Key || f.type == menu::SettingType::Binding) {
-            auto text = field == int(i) && capture.Active() ? "Press keys (Esc = Unbound)"
-                                                            : menu::SettingKeyCaption(f);
+            auto text = menu::SettingKeyCaption(f);
+            if (text == "NONE")
+                text = tr("passive.unbound");
+            if (field == int(i) && capture.Active())
+                text = tr("passive.capture");
+            fonts::note(text);
             if (ore::button("##binding", text.c_str())) {
                 field = int(i);
                 keys = {};
@@ -193,6 +204,14 @@ void draw(float height) {
                     keys[k] = (GetAsyncKeyState(int(k)) & 0x8000) != 0;
                 capture.Begin(keys, f.type == menu::SettingType::Binding ? f.bindingModifiers : 0);
                 captureActive = true;
+            }
+            ImGui::SameLine();
+            auto unbound = f;
+            bool canUnbind = menu::SetKey(unbound, 0);
+            if (ore::button("##unbind", tr("passive.unbind"), ore::Variant::Dark, {0, 0},
+                            !canUnbind || unbound.value == f.value)) {
+                suspend();
+                f.value = std::move(unbound.value);
             }
         } else {
             if (f.type == menu::SettingType::Slider) {
@@ -207,12 +226,12 @@ void draw(float height) {
             if (ImGui::InputText("##v", buf, 4097))
                 inputs.edit(f);
             if (inputs.invalid(f.path)) {
-                auto error = menu::SettingInputError(f);
+                auto error = std::string(tr("passive.input_error"));
                 fonts::note(error);
                 ore::textWrapped(error.c_str(), ore::color::Red);
             }
         }
-        if (ore::button("##reset", "Reset", ore::Variant::Dark)) {
+        if (ore::button("##reset", tr("passive.reset"), ore::Variant::Dark)) {
             menu::ResetSetting(f);
             inputs.reset(f.path);
         }
@@ -232,7 +251,7 @@ void footer(float width) {
         suspend();
         ticket = compat::settingsService().apply(root, draft);
         if (!ticket)
-            draft.message = "Settings worker is busy; try again.";
+            draft.message = tr("passive.worker_busy");
     }
     ImGui::EndDisabled();
     const float textX = ImGui::GetItemRectMax().x + ore::s(12);
