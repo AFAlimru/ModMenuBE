@@ -31,6 +31,16 @@ namespace {
 using Table = std::map<std::string_view, char const*>;
 
 Table const kEnUs = {
+    {"passive.apply", "Apply"},
+    {"passive.discard_hint", "Back / Cancel discards unsaved edits"},
+    {"passive.capture", "Press keys (Esc = Cancel)"},
+    {"passive.key_rejected", "This field does not accept that key; its value was preserved."},
+    {"passive.unbind", "Unbind"},
+    {"passive.unbound", "Unbound"},
+    {"passive.reset", "Reset"},
+    {"passive.loading", "Loading settings..."},
+    {"passive.worker_busy", "Settings worker is busy; try again."},
+    {"passive.input_error", "Invalid value. Check this field's type, range, step and text limits."},
     {"title", "Mods"},
     {"count", "%d mods, %d loaded"},
     {"search", "Search mods..."},
@@ -142,6 +152,16 @@ Table const kEnUs = {
 };
 
 Table const kZhTw = {
+    {"passive.apply", "套用"},
+    {"passive.discard_hint", "返回或取消會捨棄未儲存的修改"},
+    {"passive.capture", "請按下按鍵（Esc 取消）"},
+    {"passive.key_rejected", "此欄位不接受這個按鍵；已保留原本的綁定。"},
+    {"passive.unbind", "解除綁定"},
+    {"passive.unbound", "未綁定"},
+    {"passive.reset", "重設"},
+    {"passive.loading", "正在讀取設定…"},
+    {"passive.worker_busy", "設定工作佇列忙碌中，請稍後重試。"},
+    {"passive.input_error", "數值無效，請檢查此欄位的型別、範圍、步進與文字長度限制。"},
     {"title", "模組"},
     {"count", "%d 個模組，%d 個已載入"},
     {"search", "搜尋模組…"},

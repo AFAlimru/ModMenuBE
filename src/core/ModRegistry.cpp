@@ -1,4 +1,7 @@
 #include "core/ModRegistry.h"
+#ifdef _WIN32
+#include "compat/PassiveSettings.h"
+#endif
 
 #include "core/Log.h"
 #include "core/Paths.h"
@@ -285,6 +288,11 @@ void ModRegistry::rescan() {
         }
 
         if (!info->entry.empty()) info->loaded = isModuleLoaded(folder / fromUtf8(info->entry));
+
+#ifdef _WIN32
+        info->legacySettings =
+            info->loaded && std::filesystem::is_regular_file(folder / L"modmenu.settings.json", ec);
+#endif
         if (info->adapter && info->adapter->configDisabled) {
             // The author turned the config editor off.
         } else if (info->adapter && !info->adapter->files.empty()) {

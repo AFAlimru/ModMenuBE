@@ -19,6 +19,7 @@ Minecraft 基岩版（Windows GDK）的模組選單。概念參照 Java 版的 [
   1. 模組在 `modmenu.json` 裡描述設定檔，ModMenuBE 會照描述顯示多語系標籤、分組、滑桿和下拉選單。
   2. 模組在程式裡透過 C API 註冊自己的設定頁。
   3. 都沒有時，顯示 `config/*.json` 的通用編輯器。
+- Windows 插件也可自行附帶版本化的 `modmenu.settings.json`，提供先編輯草稿、套用才儲存的開關、滑桿、文字與組合鍵控件，詳見[設定相容指南](integration/README.md)。原有 `modmenu.json` 與 C API 在兩個平台都保留。
 - 更新檢查：lip、GitHub Releases、CurseForge，或自訂 JSON 網址。
 - 頭像、說明、授權和 README 會自動從 [LeviMC 模組目錄](https://levimc.org/mods/)（lip 使用的目錄）補上。
 
@@ -273,6 +274,7 @@ A mod menu for Minecraft Bedrock (Windows GDK), modelled on Java's [ModMenu](htt
 - Details: icon, version, authors, description, links, license, load state, folder, and the README from GitHub.
 - Enable/disable: renames `manifest.json` to `manifest.json.close`, like LeviLauncher; applies after a restart.
 - Config screens from `modmenu.json`, from the C API, or a generic `config/*.json` editor.
+- Windows plugins can also ship a versioned `modmenu.settings.json` sidecar for draft Apply/Cancel controls, sliders, text and keyboard combinations. See the [compatibility guide](integration/README.md). Existing `modmenu.json` and C API routes remain available on both platforms.
 - Update checks through lip, GitHub Releases, CurseForge or a JSON URL.
 - Icon, description, license and README are filled in from the [LeviMC mod catalogue](https://levimc.org/mods/).
 

@@ -1,5 +1,6 @@
 // ModMenuBE's own settings screen, registered through the same API other mods use.
 #include "ui/SelfConfig.h"
+#include "ui/LegacySettings.h"
 
 #ifdef _WIN32
 #include <Windows.h>
@@ -17,21 +18,6 @@
 namespace modmenu::ui {
 
 namespace {
-
-#ifdef _WIN32
-struct Key {
-    int         vk;
-    char const* name;
-};
-constexpr Key kKeys[] = {
-    {VK_F1, "F1"},         {VK_F2, "F2"},           {VK_F3, "F3"},       {VK_F4, "F4"},
-    {VK_F5, "F5"},         {VK_F6, "F6"},           {VK_F7, "F7"},       {VK_F8, "F8"},
-    {VK_F9, "F9"},         {VK_F10, "F10"},         {VK_F11, "F11"},     {VK_F12, "F12"},
-    {VK_INSERT, "Insert"}, {VK_HOME, "Home"},       {VK_END, "End"},     {VK_PRIOR, "Page Up"},
-    {VK_NEXT, "Page Down"}, {VK_PAUSE, "Pause"},    {VK_SCROLL, "Scroll Lock"}, {VK_OEM_3, "` (~)"},
-};
-constexpr int kKeyCount = int(sizeof(kKeys) / sizeof(kKeys[0]));
-#endif
 
 char const* const kLanguages[] = {"auto", "zh_TW", "en_US"};
 
@@ -56,19 +42,10 @@ void registerSelfConfig() {
 #ifdef _WIN32 // Android opens the menu from a floating button (F8 on a hardware keyboard)
     {
         ConfigOption o;
-        o.kind  = OptionKind::Enum;
+        o.kind = OptionKind::Button;
         o.id    = "hotkey";
         o.label = tr("settings.hotkey");
-        for (auto const& k : kKeys) o.choices.emplace_back(k.name);
-        o.getInt = [](void*) -> int64_t {
-            int vk = settings().hotkey;
-            for (int i = 0; i < kKeyCount; ++i)
-                if (kKeys[i].vk == vk) return i;
-            return -1;
-        };
-        o.setInt = [](void*, int64_t i) {
-            if (i >= 0 && i < kKeyCount) settings().hotkey = kKeys[i].vk;
-        };
+        o.onClick = [](void*) { legacy::beginMenuBinding(); };
         reg.addOption("ModMenuBE", std::move(o));
     }
 #endif

@@ -25,6 +25,9 @@
 #include "ui/Markdown.h"
 #include "ui/OreTheme.h"
 #include "ui/SafeCall.h"
+#include "ui/SelfConfig.h"
+#include "ui/LegacySettings.h"
+#include "modmenu/ModMenuBinding.h"
 
 #include <imgui.h>
 #include <imgui_internal.h>
@@ -54,10 +57,12 @@ std::mutex        gRequestMutex;
 Requests          gRequests;
 std::atomic<bool> gOpen{false};
 std::atomic<bool> gPending{false};
-std::atomic<bool> gCapturingHotkey{false};
+std::atomic<bool> gTextInput{false};
 
 // ---------------------------------------------------------------- screen state (render thread)
-enum class View { List, Config, Json };
+enum class View { List, Config, Json, Legacy };
+std::atomic<bool> gFocusLost{false};
+std::atomic<bool> gHotkeyArmed{true};
 
 struct State {
     View        view = View::List;
@@ -90,19 +95,6 @@ void showToast(std::string text) {
     gState.toast      = std::move(text);
     gState.toastUntil = ImGui::GetTime() + 4.0;
 }
-
-#ifdef _WIN32
-std::string keyName(int vk) {
-    UINT scan = MapVirtualKeyW(UINT(vk), MAPVK_VK_TO_VSC);
-    LONG lp   = LONG(scan << 16);
-    if (vk == VK_INSERT || vk == VK_DELETE || vk == VK_HOME || vk == VK_END || vk == VK_PRIOR || vk == VK_NEXT
-        || (vk >= VK_LEFT && vk <= VK_DOWN))
-        lp |= 1 << 24;
-    wchar_t name[64]{};
-    if (GetKeyNameTextW(lp, name, 64) > 0) return toUtf8(name);
-    return "VK " + std::to_string(vk);
-}
-#endif
 
 // ---------------------------------------------------------------- helpers
 ImU32 tileColor(std::string const& name) {
@@ -180,7 +172,7 @@ float drawBadges(ImDrawList* dl, ModInfo const& mod, ImVec2 pos, float maxX, boo
 }
 
 bool hasConfig(ModInfo const& mod) {
-    return ConfigRegistry::instance().has(mod.name) || !mod.configFiles.empty();
+    return legacy::available(mod) || ConfigRegistry::instance().has(mod.name) || !mod.configFiles.empty();
 }
 
 // ---------------------------------------------------------------- opening a mod's own menu
@@ -514,6 +506,12 @@ void openConfigFor(ModInfo const& mod) {
         if (!safe::action(screen->external, screen->externalUser)) gState.faultedScreens.insert(mod.name);
         return;
     }
+    if (legacy::available(mod)) {
+        legacy::open(mod);
+        gState.view = View::Legacy;
+        gState.configMod = mod.name;
+        return;
+    }
     if (screen && !screen->categories.empty()) {
         gState.view           = View::Config;
         gState.configMod      = mod.name;
@@ -577,7 +575,7 @@ void drawDetails(ModInfo const& mod) {
 
     // Actions
     auto screen       = ConfigRegistry::instance().get(mod.name);
-    bool apiScreen    = screen && (screen->external || !screen->categories.empty());
+    bool apiScreen = legacy::available(mod) || (screen && (screen->external || !screen->categories.empty()));
     bool configurable = hasConfig(mod) && !gState.faultedScreens.count(mod.name);
 #ifdef _WIN32
     if (!apiScreen && opensOwnMenu(mod)) {
@@ -875,7 +873,14 @@ bool drawOption(Column const& c, ConfigOption const& o) {
     }
     case OptionKind::Button:
         optionCard(c, id, o.label, o.tooltip, {}, ControlKind::Button, [&](float w) {
-            if (ore::button("##b", o.label.c_str(), ore::Variant::Dark, {w, 0})) ok = safe::action(o.onClick, o.user);
+            auto buttonLabel =
+                (gState.configMod == "ModMenuBE" && o.id == "hotkey")
+                    ? (legacy::capturing() ? std::string(tr("passive.capture"))
+                                           : binding::Token({unsigned(settings().hotkey.load()),
+                                                             settings().hotkeyModifiers.load()}))
+                    : o.label;
+            if (ore::button("##b", buttonLabel.c_str(), ore::Variant::Dark, {w, 0}))
+                ok = safe::action(o.onClick, o.user);
         });
         break;
     }
@@ -883,6 +888,8 @@ bool drawOption(Column const& c, ConfigOption const& o) {
 }
 
 void finishConfig() {
+    if (gState.view == View::Legacy)
+        legacy::close();
     if (gState.view == View::Config) {
         if (auto screen = ConfigRegistry::instance().get(gState.configMod)) {
             if (!safe::action(screen->onSave, screen->onSaveUser)) gState.faultedScreens.insert(gState.configMod);
@@ -1180,7 +1187,8 @@ void applyRequests() {
     }
     if (!open && wasOpen) {
         if (gState.view != View::List) finishConfig();
-        gCapturingHotkey = false;
+        legacy::suspend();
+        gTextInput = false;
     }
     gOpen = open;
 }
@@ -1277,7 +1285,8 @@ void drawListView(ImVec2 bodyMin, ImVec2 bodyMax) {
 
 void drawFooter(ImVec2 min, float width, float height) {
     ImDrawList* dl = ImGui::GetWindowDrawList();
-    float       by = min.y + (height - s(40)) * 0.5f;
+    const bool passive = gState.view == View::Legacy;
+    float by = passive ? min.y + s(8) : min.y + (height - s(40)) * 0.5f;
     // Right side buttons first so we know where the left text must stop.
     float x = min.x + width;
     auto  placeRight = [&](char const* id, char const* label, ore::Variant v, bool disabled) {
@@ -1299,6 +1308,12 @@ void drawFooter(ImVec2 min, float width, float height) {
         if (placeRight("##updates", running ? tr("checking_updates") : tr("check_updates"), ore::Variant::Dark,
                        running))
             UpdateChecker::instance().checkAll();
+    } else if (gState.view == View::Legacy) {
+        const bool cancel = placeRight("##cancel-passive", tr("cancel"), ore::Variant::Dark, false);
+        ImGui::SetCursorScreenPos({min.x + s(4), by});
+        legacy::footer(std::max(0.f, x - min.x - s(4)));
+        if (cancel)
+            finishConfig();
     } else if (gState.view == View::Config) {
         if (placeRight("##done", tr("done"), ore::Variant::Primary, false)) finishConfig();
     } else if (gState.view == View::Json && !gState.docs.empty()) {
@@ -1322,14 +1337,19 @@ void drawFooter(ImVec2 min, float width, float height) {
     } else {
 #ifdef _WIN32
         if (gState.view == View::List && !ModRegistry::instance().leviLaminaLoaded()) msg = tr("leviLamina_missing");
-        else msg = fmt(tr("hint"), keyName(settings().hotkey).c_str());
+        else
+            msg = fmt(tr("hint"),
+                      binding::Token({unsigned(settings().hotkey.load()), settings().hotkeyModifiers.load()})
+                          .c_str());
 #else
         msg = tr("hint.android");
 #endif
     }
     fonts::note(msg);
-    dl->PushClipRect(min, {x, min.y + height}, true);
-    dl->AddText({min.x + s(4), min.y + (height - ImGui::GetFontSize()) * 0.5f}, color, msg.c_str());
+    const float textY = passive ? by + s(40) + s(8) : min.y + (height - ImGui::GetFontSize()) * .5f;
+    const float textRight = passive ? min.x + width : x;
+    dl->PushClipRect({min.x, textY}, {std::max(min.x, textRight), min.y + height}, true);
+    dl->AddText({min.x + s(4), textY}, color, msg.c_str());
     dl->PopClipRect();
 }
 
@@ -1412,6 +1432,15 @@ void setPlatformScale(float scale) { gPlatformScale = scale; }
 #endif
 
 bool prepareFrame(float width, float height) {
+#ifdef _WIN32
+    if (gFocusLost.exchange(false)) {
+        legacy::suspend();
+        gTextInput = false;
+        ImGui::GetIO().ClearInputKeys();
+        ImGui::GetIO().ClearInputMouse();
+        ImGui::ClearActiveID();
+    }
+#endif
     applyRequests();
     icons::pump();
     // Design size is 1080p; follow the window and the user's scale.
@@ -1444,8 +1473,8 @@ void drawFrame() {
 #endif
 
     // Esc: leave the sub view, else close. Not while a text field or popup has focus.
-    if (ImGui::IsKeyPressed(ImGuiKey_Escape, false) && ImGui::GetActiveID() == 0 && !io.WantTextInput
-        && !ImGui::IsPopupOpen("", ImGuiPopupFlags_AnyPopupId)) {
+    if (!legacy::capturing() && ImGui::IsKeyPressed(ImGuiKey_Escape, false) && ImGui::GetActiveID() == 0 &&
+        !io.WantTextInput && !ImGui::IsPopupOpen("", ImGuiPopupFlags_AnyPopupId)) {
         if (gState.view != View::List) finishConfig();
         else requestClose("Esc");
     }
@@ -1470,7 +1499,7 @@ void drawFrame() {
     ImVec2 max{min.x + width, min.y + height};
     ore::panel(dl, min, max, col::Panel, true);
 
-    float headerH = s(60), footerH = s(58), pad = s(14);
+    float headerH = s(60), footerH = s(gState.view == View::Legacy ? 86 : 58), pad = s(14);
     std::string titleText, subtitle;
     if (gState.view == View::List) {
         auto all    = ModRegistry::instance().mods();
@@ -1495,7 +1524,10 @@ void drawFrame() {
         ImGui::SetCursorScreenPos(bodyMin);
         ImGui::BeginChild("sub", {bodyMax.x - bodyMin.x, bodyMax.y - bodyMin.y});
         float h = bodyMax.y - bodyMin.y;
-        if (gState.view == View::Config) drawConfigBody(h);
+        if (gState.view == View::Legacy)
+            legacy::draw(h);
+        else if (gState.view == View::Config)
+            drawConfigBody(h);
         else drawJsonBody(h);
         ImGui::EndChild();
     }
@@ -1504,25 +1536,48 @@ void drawFrame() {
     drawFooter({min.x + pad, max.y - footerH + s(2)}, width - pad * 2, footerH - s(2));
     drawConfirm();
     ImGui::End();
+    gTextInput = io.WantTextInput;
 }
 
 void onDeviceLost() { icons::clear(); }
 
 #ifdef _WIN32
+void notifyFocusLost() {
+    gFocusLost = true;
+    gHotkeyArmed = false;
+}
 bool handleWindowMessage(UINT msg, WPARAM wParam, LPARAM lParam) {
-    if (msg != WM_KEYDOWN && msg != WM_SYSKEYDOWN) return false;
-    if (gCapturingHotkey) {
-        if (wParam != VK_ESCAPE) {
-            settings().hotkey = int(wParam);
-            settings().save();
-        }
-        gCapturingHotkey = false;
-        return true;
+    if (legacy::capturing())
+        return false;
+    if (gOpen && gTextInput)
+        return false;
+    if (!gHotkeyArmed) {
+        bool held = false;
+        for (unsigned k = 8; k < 256; ++k)
+            held |= (GetAsyncKeyState(int(k)) & 0x8000) != 0;
+        if (!held)
+            gHotkeyArmed = true;
+        else
+            return false;
     }
+    if (msg != WM_KEYDOWN && msg != WM_SYSKEYDOWN) return false;
     bool repeat = (lParam & (1 << 30)) != 0;
-    if (int(wParam) == settings().hotkey.load()) {
-        if (!repeat) requestToggle(("hotkey vk " + std::to_string(wParam)).c_str());
-        return true;
+    binding::Binding b{unsigned(settings().hotkey.load()), settings().hotkeyModifiers.load()};
+    auto snapshot = binding::Sample(b, [](unsigned k) { return (GetAsyncKeyState(int(k)) & 0x8000) != 0; });
+    unsigned key = unsigned(wParam);
+    if (key == VK_SHIFT)
+        key = MapVirtualKeyW((unsigned(lParam) >> 16) & 255, MAPVK_VSC_TO_VK_EX);
+    if (key == VK_CONTROL)
+        key = (lParam & (1 << 24)) ? VK_RCONTROL : VK_LCONTROL;
+    if (key == VK_MENU)
+        key = (lParam & (1 << 24)) ? VK_RMENU : VK_LMENU;
+    if (b.key == key || b.key == unsigned(wParam)) {
+        snapshot[b.key] = true;
+        if (binding::Matches(b, snapshot)) {
+            if (!repeat)
+                requestToggle("keyboard chord");
+            return true;
+        }
     }
     return false;
 }
@@ -1530,5 +1585,14 @@ bool handleWindowMessage(UINT msg, WPARAM wParam, LPARAM lParam) {
 #endif
 
 bool blocksGameInput() { return gOpen && settings().pauseInputWhileOpen; }
+bool acceptsUiInput() {
+#ifdef _WIN32
+    HWND window = GetForegroundWindow();
+    DWORD pid = 0;
+    if (!window || !GetWindowThreadProcessId(window, &pid) || pid != GetCurrentProcessId())
+        return false;
+#endif
+    return gOpen && !gFocusLost;
+}
 
 } // namespace modmenu::ui

@@ -9,12 +9,60 @@ add_requires("nlohmann_json")
 
 set_runtimes("MT")
 
+-- Passive settings tests use the real parser and transactional file backend.
+local passive_controls = {
+    "src/compat/SettingsDescription.cpp", "src/compat/SettingsInput.cpp",
+    "src/compat/SettingsSchema.cpp", "src/compat/Slider.cpp",
+    "src/compat/TextEditor.cpp", "src/compat/Utf8.cpp"
+}
+
+for _, test in ipairs({"ExternalSettingsTests", "SettingsTransactionTests", "TextEditorTests", "SettingsFlowTests"}) do
+    target(test)
+        set_default(false)
+        set_kind("binary")
+        set_languages("c++20")
+        add_includedirs("include", "src", "src/compat")
+        add_files("tests/" .. test .. ".cpp")
+        add_files(table.unpack(passive_controls))
+        if test ~= "SettingsTransactionTests" then add_files("src/compat/Settings.cpp") end
+        if test == "SettingsFlowTests" then add_files("src/compat/SettingsService.cpp") end
+        add_packages("nlohmann_json")
+        add_defines("NOMINMAX", "WIN32_LEAN_AND_MEAN")
+        add_cxflags("/utf-8", "/EHsc")
+end
+
+target("SettingsCompatibilityTests")
+    set_default(false)
+    set_kind("binary")
+    set_languages("c++20")
+    add_includedirs("include", "src")
+    add_files("tests/SettingsCompatibilityTests.cpp", "src/core/Settings.cpp", "src/core/Util.cpp", "src/core/Log.cpp")
+    add_packages("nlohmann_json")
+    add_defines("NOMINMAX", "WIN32_LEAN_AND_MEAN")
+    add_syslinks("user32", "shell32")
+    add_cxflags("/utf-8", "/EHsc")
+
+target("SettingsUiTests")
+    set_default(false)
+    set_kind("binary")
+    set_languages("c++20")
+    add_includedirs("include", "src", "src/compat")
+    add_files("tests/SettingsUiTests.cpp", "src/ui/OreTheme.cpp", "src/ui/SelfConfig.cpp",
+              "src/core/ConfigRegistry.cpp", "src/core/I18n.cpp", "src/core/Settings.cpp",
+              "src/core/Util.cpp", "src/core/Log.cpp", "src/compat/Settings.cpp",
+              "src/compat/SettingsService.cpp")
+    add_files(table.unpack(passive_controls))
+    add_packages("imgui", "nlohmann_json")
+    add_defines("NOMINMAX", "WIN32_LEAN_AND_MEAN")
+    add_syslinks("user32", "shell32")
+    add_cxflags("/utf-8", "/EHsc")
+
 target("ModMenuBE")
     set_kind("shared")
     set_languages("c++20")
     set_encodings("utf-8")
     add_defines("NOMINMAX", "UNICODE", "_UNICODE", "WIN32_LEAN_AND_MEAN", "MODMENU_BUILDING")
-    add_includedirs("include", "src")
+    add_includedirs("include", "src", "src/compat")
     add_files("src/**.cpp")
     add_headerfiles("include/(modmenu/*.h)", "include/(modmenu/*.hpp)")
     add_packages("imgui", "minhook", "nlohmann_json")
