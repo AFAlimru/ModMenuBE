@@ -1,0 +1,9 @@
+{
+  "name": "ModMenuWorkspaceExample",
+  "entry": "ModMenuWorkspaceExample.dll",
+  "type": "preload-native",
+  "version": "0.1.0-test1",
+  "description": "Optional workspace demo: seven controls and two external UI targets. No network or file tasks.",
+  "author": "XuanDiNa",
+  "modmenu": { "license": "MIT" }
+}

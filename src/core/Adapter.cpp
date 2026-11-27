@@ -94,6 +94,7 @@ std::shared_ptr<Adapter const> parseAdapter(std::filesystem::path const& path) {
     }
     auto a    = std::make_shared<Adapter>();
     a->source = path;
+    a->workspace = workspace::parseEntry(text);
     if (j.contains("config")) {
         auto const& c = j["config"];
         if (c.is_boolean() && !c.get<bool>()) {
@@ -144,6 +145,7 @@ std::shared_ptr<Adapter const> parseAdapter(std::filesystem::path const& path) {
     a->metadata.erase("open");
     a->metadata.erase("commands");
     a->metadata.erase("config");
+    a->metadata.erase("workspace");
     a->metadata.erase("$schema");
     return a;
 }

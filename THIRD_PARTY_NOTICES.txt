@@ -85,3 +85,10 @@ SOFTWARE.
 Passive settings compatibility
 ------------------------------
 The src/compat settings parser, controls and transaction code and the binding header are adapted from XuanDiNa/ModMenuBedrock (MIT). See integration/ModMenuBedrock-LICENSE.txt.
+
+Optional Windows native entry
+-----------------------------
+The exact native profile/guard/definition sources are adapted from
+XuanDiNa/ModMenuBedrock, commit 10f80f266523d3196e1af1f212375abadfa7c9a1,
+editions/vanilla (MIT). The full notice is in integration/ModMenuBedrock-LICENSE.txt.
+See docs/NATIVE_ENTRY.md for the extraction and additional exact-image provenance.
