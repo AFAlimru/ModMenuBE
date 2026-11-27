@@ -16,6 +16,9 @@
 #include "core/Util.h"
 #ifdef _WIN32
 #include "overlay/Overlay.h"
+#include "overlay/OpenDiagnostics.h"
+#include "compat/NativeBridge.h"
+#include "compat/ReleaseGate.h"
 #else
 #include <pthread.h>
 #include <unistd.h>
@@ -61,8 +64,29 @@ std::atomic<bool> gTextInput{false};
 
 // ---------------------------------------------------------------- screen state (render thread)
 enum class View { List, Config, Json, Legacy };
+#ifdef _WIN32
+compat::Admission gAdmission;
+std::atomic<bool> gInputActive{false};
+std::atomic<std::uintptr_t> gOriginIdentity{};
+std::atomic<unsigned> gOriginScene{};
+compat::ReleaseGate gReleaseGate;
+#endif
 std::atomic<bool> gFocusLost{false};
 std::atomic<bool> gHotkeyArmed{true};
+
+#ifdef _WIN32
+bool foregroundProcess() {
+    DWORD pid = 0;
+    HWND window = GetForegroundWindow();
+    return window && GetWindowThreadProcessId(window, &pid) && pid == GetCurrentProcessId();
+}
+
+bool ownsNativeOrigin() {
+    auto observation = compat::nativeObservation();
+    return observation.eligible && observation.foreground && observation.identity == gOriginIdentity &&
+           observation.scene == gOriginScene;
+}
+#endif
 
 struct State {
     View        view = View::List;
@@ -1433,15 +1457,52 @@ void setPlatformScale(float scale) { gPlatformScale = scale; }
 
 bool prepareFrame(float width, float height) {
 #ifdef _WIN32
-    if (gFocusLost.exchange(false)) {
+    auto observation = compat::nativeObservation();
+    bool native = compat::nativeReady();
+    bool retained = gAdmission.retained();
+    bool admitted = native ? gAdmission.observe(observation) : foregroundProcess();
+    if (native && retained && !gAdmission.retained() && gOpen)
+        requestClose("native origin changed");
+    if (gFocusLost.exchange(false) || (!admitted && gInputActive.load())) {
+        gInputActive = false;
+        gReleaseGate.suspend();
         legacy::suspend();
         gTextInput = false;
         ImGui::GetIO().ClearInputKeys();
         ImGui::GetIO().ClearInputMouse();
         ImGui::ClearActiveID();
+        ImGui::ClosePopupsExceptModals();
     }
+    if (native && !observation.eligible && gOpen)
+        requestClose("native scene invalid");
 #endif
     applyRequests();
+#ifdef _WIN32
+    if (native && gOpen && !gAdmission.retained()) {
+        if (admitted)
+            gAdmission.open();
+        else
+            requestClose("native admission refused");
+    }
+    if (!gOpen)
+        gAdmission.close();
+    binding::Snapshot keys{};
+    for (unsigned key = 1; key < keys.size(); ++key)
+        keys[key] = (GetAsyncKeyState(int(key)) & 0x8000) != 0;
+    if (!native)
+        admitted = foregroundProcess();
+    if (admitted)
+        admitted = gReleaseGate.allow(keys);
+    gInputActive = gOpen && admitted;
+    if (native && gOpen && gAdmission.retained()) {
+        gOriginIdentity = observation.identity;
+        gOriginScene = observation.scene;
+    } else {
+        gOriginIdentity = 0;
+        gOriginScene = 0;
+    }
+    pollInputRelease();
+#endif
     icons::pump();
     // Design size is 1080p; follow the window and the user's scale.
     float base = std::clamp(height / 960.0f, 0.6f, 3.0f);
@@ -1465,6 +1526,10 @@ bool prepareFrame(float width, float height) {
 
 void drawFrame() {
     if (!gOpen) return;
+#ifdef _WIN32
+    if (!gInputActive)
+        return;
+#endif
     ImGuiIO& io = ImGui::GetIO();
 #ifdef _WIN32
     // Software cursor when the game has hidden the OS one (in-world).
@@ -1543,23 +1608,45 @@ void onDeviceLost() { icons::clear(); }
 
 #ifdef _WIN32
 void notifyFocusLost() {
+    gInputActive = false;
     gFocusLost = true;
     gHotkeyArmed = false;
 }
+void pollInputRelease() {
+    if (!gHotkeyArmed && foregroundProcess()) {
+        for (unsigned key = 8; key < 256; ++key)
+            if ((GetAsyncKeyState(int(key)) & 0x8000) != 0)
+                return;
+        gHotkeyArmed = true;
+    }
+}
 bool handleWindowMessage(UINT msg, WPARAM wParam, LPARAM lParam) {
+    // Only the configured opening key, bounded to eight non-repeat attempts.
+    // No text, other keystrokes or account data is recorded.
+    static std::atomic<unsigned> hotkeyDiagnostics{};
+    if ((msg == WM_KEYDOWN || msg == WM_SYSKEYDOWN) && !(lParam & (1 << 30)) &&
+        unsigned(wParam) == unsigned(settings().hotkey.load()) && hotkeyDiagnostics.fetch_add(1) < 8) {
+        auto observation = compat::nativeObservation();
+        log::info("configured menu hotkey observed; foreground={} native={} eligible={} nativeForeground={} "
+                  "armed={}",
+                  foregroundProcess(), compat::nativeReady(), observation.eligible, observation.foreground,
+                  gHotkeyArmed.load());
+    }
+    if (!foregroundProcess())
+        return false;
+    if (compat::nativeReady()) {
+        auto observation = compat::nativeObservation();
+        if (!observation.eligible || !observation.foreground)
+            return false;
+    }
+
     if (legacy::capturing())
         return false;
     if (gOpen && gTextInput)
         return false;
-    if (!gHotkeyArmed) {
-        bool held = false;
-        for (unsigned k = 8; k < 256; ++k)
-            held |= (GetAsyncKeyState(int(k)) & 0x8000) != 0;
-        if (!held)
-            gHotkeyArmed = true;
-        else
-            return false;
-    }
+    pollInputRelease();
+    if (!gHotkeyArmed)
+        return false;
     if (msg != WM_KEYDOWN && msg != WM_SYSKEYDOWN) return false;
     bool repeat = (lParam & (1 << 30)) != 0;
     binding::Binding b{unsigned(settings().hotkey.load()), settings().hotkeyModifiers.load()};
@@ -1584,12 +1671,22 @@ bool handleWindowMessage(UINT msg, WPARAM wParam, LPARAM lParam) {
 
 #endif
 
-bool blocksGameInput() { return gOpen && settings().pauseInputWhileOpen; }
+bool blocksGameInput() {
+    if (!gOpen || !settings().pauseInputWhileOpen)
+        return false;
+#ifdef _WIN32
+    if (overlay::graphicsFaulted() || gFocusLost || !foregroundProcess())
+        return false;
+    if (compat::nativeReady())
+        return ownsNativeOrigin();
+#endif
+    return true;
+}
 bool acceptsUiInput() {
 #ifdef _WIN32
-    HWND window = GetForegroundWindow();
-    DWORD pid = 0;
-    if (!window || !GetWindowThreadProcessId(window, &pid) || pid != GetCurrentProcessId())
+    if (!gInputActive || overlay::graphicsFaulted() || !foregroundProcess())
+        return false;
+    if (compat::nativeReady() && !ownsNativeOrigin())
         return false;
 #endif
     return gOpen && !gFocusLost;

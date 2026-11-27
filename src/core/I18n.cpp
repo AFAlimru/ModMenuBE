@@ -4,6 +4,7 @@
 
 #ifdef _WIN32
 #include <Windows.h>
+#include "compat/NativeBridge.h"
 #else
 #include <sys/system_properties.h>
 #endif
@@ -282,7 +283,9 @@ void reloadLanguage() {
     if (lang == "auto" || lang.empty()) {
 #ifdef _WIN32
         LANGID id = GetUserDefaultUILanguage();
-        lang      = PRIMARYLANGID(id) == LANG_CHINESE ? "zh_TW" : "en_US";
+        lang = compat::nativeReady()               ? compat::gameLanguage()
+               : PRIMARYLANGID(id) == LANG_CHINESE ? "zh_TW"
+                                                   : "en_US";
 #else
         char value[PROP_VALUE_MAX]{};
         if (__system_property_get("persist.sys.locale", value) <= 0) __system_property_get("ro.product.locale", value);
